@@ -57,7 +57,8 @@ const {
   createVendorHousePlan,
   deleteVendorHousePlan,
   listVendorPlanFamilies,
-  createVendorPlanFamily
+  createVendorPlanFamily,
+  uploadHousePlanImages
 } = useVendorService()
 
 const slideoverOpen = ref(false)
@@ -65,6 +66,41 @@ const submitting = ref(false)
 const form = ref<PlanForm>(emptyForm())
 const formErrors = ref<Partial<PlanForm>>({})
 const sourcePlanId = ref('')
+
+const selectedImages = ref<File[]>([])
+const imagePreviews = ref<string[]>([])
+
+function handleImageSelect(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  const MAX_SIZE = 10 * 1024 * 1024
+  const valid = files.filter(f => f.size <= MAX_SIZE)
+  const skipped = files.length - valid.length
+  if (skipped > 0) {
+    toast.add({
+      title: 'Za duże pliki',
+      description: `${skipped} plik(i) przekracza limit 10 MB i zostało pominięte.`,
+      color: 'warning'
+    })
+  }
+  valid.forEach((f) => {
+    selectedImages.value.push(f)
+    imagePreviews.value.push(URL.createObjectURL(f))
+  })
+  input.value = ''
+}
+
+function removeSelectedImage(index: number) {
+  URL.revokeObjectURL(imagePreviews.value[index]!)
+  selectedImages.value.splice(index, 1)
+  imagePreviews.value.splice(index, 1)
+}
+
+function clearImages() {
+  imagePreviews.value.forEach(url => URL.revokeObjectURL(url))
+  selectedImages.value = []
+  imagePreviews.value = []
+}
 
 function validateForm(): boolean {
   const e: Partial<PlanForm> = {}
@@ -119,7 +155,7 @@ async function submitPlan() {
       }
     }
 
-    await createVendorHousePlan(route.query.id as string, {
+    const createdPlan = await createVendorHousePlan(route.query.id as string, {
       title: form.value.title.trim(),
       price: Number(form.value.price),
       house_area: Number(form.value.house_area),
@@ -174,6 +210,23 @@ async function submitPlan() {
       ...(form.value.terrace === 'tak' && { terrace: true }),
       ...(form.value.terrace === 'nie' && { terrace: false })
     })
+
+    if (selectedImages.value.length > 0) {
+      try {
+        await uploadHousePlanImages(
+          route.query.id as string,
+          createdPlan.id,
+          selectedImages.value
+        )
+      } catch {
+        toast.add({
+          title: 'Zdjęcia nie zostały przesłane',
+          description: 'Plan dodany, ale przesyłanie zdjęć nie powiodło się. Możesz spróbować ponownie.',
+          color: 'warning'
+        })
+      }
+    }
+
     toast.add({
       title: 'Plan dodany',
       description: 'Plan domu został opublikowany.',
@@ -181,6 +234,7 @@ async function submitPlan() {
     })
     slideoverOpen.value = false
     form.value = emptyForm()
+    clearImages()
     await Promise.all([
       refreshNuxtData(`vendor-${route.query.id}`),
       refreshNuxtData(`vendor-house-plans-${route.query.id}`)
@@ -697,8 +751,65 @@ const statusColor = (status: string) => {
             />
           </div>
 
-          <div class="space-y-1">
-            <p class="text-sm text-muted">Zdjęcia projektu dodaj przez panel admina Medusa po utworzeniu planu.</p>
+          <!-- Zdjęcia projektu -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-default">Zdjęcia projektu</label>
+
+            <div
+              v-if="imagePreviews.length"
+              class="grid grid-cols-3 gap-2"
+            >
+              <div
+                v-for="(preview, i) in imagePreviews"
+                :key="i"
+                class="relative aspect-square rounded-lg overflow-hidden border border-default bg-muted group"
+              >
+                <img
+                  :src="preview"
+                  class="w-full h-full object-cover"
+                  alt=""
+                >
+                <button
+                  type="button"
+                  class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer transition-colors"
+                  @click="removeSelectedImage(i)"
+                >
+                  <UIcon
+                    name="i-lucide-x"
+                    class="size-3 text-white"
+                  />
+                </button>
+                <div
+                  v-if="i === 0"
+                  class="absolute bottom-1 left-1 bg-primary/80 text-white text-[10px] px-1.5 py-0.5 rounded"
+                >
+                  Miniatura
+                </div>
+              </div>
+            </div>
+
+            <label class="cursor-pointer block">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                @change="handleImageSelect"
+              >
+              <div class="flex items-center gap-2 border border-dashed border-default rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors">
+                <UIcon
+                  name="i-lucide-image-plus"
+                  class="size-5 text-muted shrink-0"
+                />
+                <span class="text-sm text-muted">
+                  {{ imagePreviews.length ? 'Dodaj więcej zdjęć' : 'Wybierz zdjęcia...' }}
+                </span>
+              </div>
+            </label>
+
+            <p class="text-xs text-muted">
+              JPG, PNG, WebP · maks. 10 MB na plik · pierwsze zdjęcie będzie miniaturą
+            </p>
           </div>
 
           <!-- Rodzina planów -->
