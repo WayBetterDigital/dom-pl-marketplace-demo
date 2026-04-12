@@ -25,6 +25,7 @@ const hasMultiple = computed(() => displayImages.value.length > 1)
 
 const carouselRef = useTemplateRef('carousel')
 const selectedIndex = ref(0)
+const mirrored = ref(false)
 
 watch(
   () => carouselRef.value?.emblaApi,
@@ -105,7 +106,7 @@ function scrollTo(index: number) {
         v-slot="{ item }"
         :items="displayImages"
         :dots="false"
-        class="w-full h-full"
+        :class="['w-full h-full transition-transform duration-300', { '-scale-x-100': mirrored }]"
       >
         <img
           :src="item"
@@ -139,6 +140,24 @@ function scrollTo(index: number) {
           />
         </button>
       </template>
+
+      <!-- Przycisk lustrzanego odbicia -->
+      <button
+        type="button"
+        :aria-label="mirrored ? 'Wyłącz odbicie lustrzane' : 'Włącz odbicie lustrzane'"
+        :class="[
+          'absolute bottom-2 right-2 z-10 size-9 rounded-full shadow flex items-center justify-center transition-all cursor-pointer',
+          mirrored
+            ? 'bg-primary text-white opacity-100'
+            : 'bg-white/85 text-gray-800 opacity-70 hover:opacity-100'
+        ]"
+        @click.prevent="mirrored = !mirrored"
+      >
+        <UIcon
+          name="i-lucide-flip-horizontal-2"
+          class="size-5"
+        />
+      </button>
     </div>
 
     <!-- Thumbnail strip -->
@@ -161,7 +180,7 @@ function scrollTo(index: number) {
       >
         <img
           :src="url"
-          class="w-full h-full object-cover"
+          :class="['w-full h-full object-cover transition-transform duration-300', { '-scale-x-100': mirrored }]"
           alt=""
           loading="lazy"
         >
