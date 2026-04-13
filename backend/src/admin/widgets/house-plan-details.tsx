@@ -428,7 +428,6 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
                   />
                 )}
               </div>
-              {field("img", "URL zdjęcia")}
             </div>
 
             {/* Parametry techniczne */}
