@@ -1,5 +1,6 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
 import {
+  Badge,
   Button,
   Container,
   Drawer,
@@ -13,7 +14,7 @@ import {
 } from "@medusajs/ui"
 import type { DetailWidgetProps, AdminProduct } from "@medusajs/framework/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { sdk } from "../lib/client"
 
 type HousePlan = {
@@ -402,6 +403,8 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
         )}
       </Container>
 
+      <GallerySection productId={product.id} />
+
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <Drawer.Content>
           <Drawer.Header>
@@ -512,6 +515,332 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
                 </Button>
               </Drawer.Close>
               <Button size="small" onClick={handleSave} isLoading={updateMutation.isPending}>
+                Zapisz
+              </Button>
+            </div>
+          </Drawer.Footer>
+        </Drawer.Content>
+      </Drawer>
+    </>
+  )
+}
+
+// ─── Gallery section ────────────────────────────────────────────────────────
+
+type GalleryImage = {
+  id: string
+  house_plan_id: string
+  url: string
+  description: string | null
+  category: string
+  sort_order: number
+}
+
+const GALLERY_CATEGORIES = [
+  { value: "wizualizacje", label: "Wizualizacje" },
+  { value: "strefa_dzienna", label: "Strefa dzienna" },
+  { value: "kuchnia", label: "Kuchnia" },
+  { value: "lazienka", label: "Łazienka" },
+]
+
+const CATEGORY_LABEL: Record<string, string> = {
+  wizualizacje: "Wizualizacje",
+  strefa_dzienna: "Strefa dzienna",
+  kuchnia: "Kuchnia",
+  lazienka: "Łazienka",
+}
+
+const toBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve((reader.result as string).split(",")[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+const GallerySection = ({ productId }: { productId: string }) => {
+  const queryClient = useQueryClient()
+  const galleryKey = ["product-gallery", productId]
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [addOpen, setAddOpen] = useState(false)
+  const [editImage, setEditImage] = useState<GalleryImage | null>(null)
+  const [addForm, setAddForm] = useState({ description: "", category: "wizualizacje" })
+  const [editForm, setEditForm] = useState({ description: "", category: "wizualizacje" })
+
+  const { data: galleryData, isLoading } = useQuery({
+    queryKey: galleryKey,
+    queryFn: () =>
+      sdk.client.fetch<{ gallery_images: GalleryImage[] }>(
+        `/admin/products/${productId}/gallery`
+      ),
+  })
+
+  const images = galleryData?.gallery_images ?? []
+
+  const addMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const content = await toBase64(file)
+      return sdk.client.fetch(`/admin/products/${productId}/gallery`, {
+        method: "POST",
+        body: {
+          filename: file.name,
+          mimeType: file.type,
+          content,
+          description: addForm.description || null,
+          category: addForm.category,
+          sort_order: images.length,
+        },
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: galleryKey })
+      toast.success("Zdjęcie dodane do galerii")
+      setAddOpen(false)
+      setAddForm({ description: "", category: "wizualizacje" })
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    },
+    onError: () => toast.error("Nie udało się dodać zdjęcia"),
+  })
+
+  const editMutation = useMutation({
+    mutationFn: (imageId: string) =>
+      sdk.client.fetch(`/admin/products/${productId}/gallery/${imageId}`, {
+        method: "POST",
+        body: {
+          description: editForm.description || null,
+          category: editForm.category,
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: galleryKey })
+      toast.success("Zdjęcie zaktualizowane")
+      setEditImage(null)
+    },
+    onError: () => toast.error("Nie udało się zaktualizować"),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (imageId: string) =>
+      sdk.client.fetch(`/admin/products/${productId}/gallery/${imageId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: galleryKey })
+      toast.success("Zdjęcie usunięte")
+    },
+    onError: () => toast.error("Nie udało się usunąć zdjęcia"),
+  })
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Plik za duży — maks. 10 MB")
+      return
+    }
+    addMutation.mutate(file)
+  }
+
+  if (isLoading) {
+    return (
+      <Container className="px-6 py-4">
+        <Text size="small" leading="compact" className="text-ui-fg-subtle">
+          Ładowanie galerii...
+        </Text>
+      </Container>
+    )
+  }
+
+  return (
+    <>
+      <Container className="px-6 py-4 divide-y divide-ui-border-base">
+        <div className="flex items-center justify-between pb-4">
+          <Heading level="h2">Galeria wizualizacji</Heading>
+          <Button
+            size="small"
+            variant="secondary"
+            onClick={() => setAddOpen(true)}
+          >
+            Dodaj zdjęcie
+          </Button>
+        </div>
+
+        {images.length === 0 ? (
+          <div className="py-6 text-center">
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              Brak zdjęć w galerii.
+            </Text>
+          </div>
+        ) : (
+          <div className="pt-4 grid grid-cols-3 gap-3">
+            {images.map((img) => (
+              <div key={img.id} className="flex flex-col gap-1.5">
+                <div className="relative aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle group">
+                  <img
+                    src={img.url}
+                    alt={img.description ?? ""}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      className="bg-white/90 hover:bg-white text-ui-fg-base rounded px-2 py-1 text-xs font-medium cursor-pointer"
+                      onClick={() => {
+                        setEditImage(img)
+                        setEditForm({
+                          description: img.description ?? "",
+                          category: img.category,
+                        })
+                      }}
+                    >
+                      Edytuj
+                    </button>
+                    <button
+                      type="button"
+                      className="bg-red-500/90 hover:bg-red-500 text-white rounded px-2 py-1 text-xs font-medium cursor-pointer"
+                      onClick={() => {
+                        if (!confirm("Usunąć to zdjęcie?")) return
+                        deleteMutation.mutate(img.id)
+                      }}
+                    >
+                      Usuń
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge size="xsmall" color="grey">
+                    {CATEGORY_LABEL[img.category] ?? img.category}
+                  </Badge>
+                  {img.description && (
+                    <Text size="xsmall" leading="compact" className="text-ui-fg-subtle truncate">
+                      {img.description}
+                    </Text>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Container>
+
+      {/* Add image drawer */}
+      <Drawer open={addOpen} onOpenChange={setAddOpen}>
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>Dodaj zdjęcie do galerii</Drawer.Title>
+          </Drawer.Header>
+          <Drawer.Body className="flex flex-col gap-y-4 p-6">
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Opis (opcjonalny)</Label>
+              <Input
+                value={addForm.description}
+                onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="np. Salon z widokiem na ogród"
+              />
+            </div>
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Kategoria</Label>
+              <Select
+                value={addForm.category}
+                onValueChange={(val) => setAddForm((f) => ({ ...f, category: val }))}
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  {GALLERY_CATEGORIES.map((c) => (
+                    <Select.Item key={c.value} value={c.value}>
+                      {c.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Plik zdjęcia</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="text-sm text-ui-fg-subtle file:mr-3 file:py-1 file:px-3 file:rounded file:border file:border-ui-border-base file:bg-ui-bg-subtle file:text-ui-fg-base file:cursor-pointer"
+                onChange={handleFileChange}
+              />
+              <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+                JPG, PNG, WebP · maks. 10 MB
+              </Text>
+            </div>
+          </Drawer.Body>
+          <Drawer.Footer>
+            <div className="flex justify-end gap-x-2">
+              <Drawer.Close asChild>
+                <Button size="small" variant="secondary" disabled={addMutation.isPending}>
+                  Anuluj
+                </Button>
+              </Drawer.Close>
+            </div>
+          </Drawer.Footer>
+        </Drawer.Content>
+      </Drawer>
+
+      {/* Edit image drawer */}
+      <Drawer open={!!editImage} onOpenChange={(open) => !open && setEditImage(null)}>
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>Edytuj zdjęcie</Drawer.Title>
+          </Drawer.Header>
+          <Drawer.Body className="flex flex-col gap-y-4 p-6">
+            {editImage && (
+              <div className="aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle">
+                <img
+                  src={editImage.url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Opis</Label>
+              <Input
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Opis zdjęcia..."
+              />
+            </div>
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Kategoria</Label>
+              <Select
+                value={editForm.category}
+                onValueChange={(val) => setEditForm((f) => ({ ...f, category: val }))}
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  {GALLERY_CATEGORIES.map((c) => (
+                    <Select.Item key={c.value} value={c.value}>
+                      {c.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
+          </Drawer.Body>
+          <Drawer.Footer>
+            <div className="flex justify-end gap-x-2">
+              <Button
+                size="small"
+                variant="secondary"
+                onClick={() => setEditImage(null)}
+                disabled={editMutation.isPending}
+              >
+                Anuluj
+              </Button>
+              <Button
+                size="small"
+                isLoading={editMutation.isPending}
+                onClick={() => editImage && editMutation.mutate(editImage.id)}
+              >
                 Zapisz
               </Button>
             </div>
