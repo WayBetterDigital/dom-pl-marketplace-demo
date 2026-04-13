@@ -104,6 +104,13 @@ const DetailRow = ({ label, value }: { label: string; value: string | number | n
   </div>
 )
 
+const STOREFRONT_URL = (import.meta as any).env?.VITE_STOREFRONT_URL ?? 'http://localhost:3000'
+function resolveUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith('/')) return STOREFRONT_URL + url
+  return url
+}
+
 const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduct>) => {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [form, setForm] = useState<EditForm | null>(null)
@@ -678,7 +685,7 @@ const GallerySection = ({ productId }: { productId: string }) => {
               <div key={img.id} className="flex flex-col gap-1.5">
                 <div className="relative aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle group">
                   <img
-                    src={img.url}
+                    src={resolveUrl(img.url)}
                     alt={img.description ?? ""}
                     className="w-full h-full object-cover"
                   />
@@ -793,7 +800,7 @@ const GallerySection = ({ productId }: { productId: string }) => {
             {editImage && (
               <div className="aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle">
                 <img
-                  src={editImage.url}
+                  src={resolveUrl(editImage.url)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
@@ -1014,7 +1021,7 @@ const SketchSection = ({ productId }: { productId: string }) => {
               <div key={sketch.id} className="flex flex-col gap-1.5">
                 <div className="relative aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle group">
                   <img
-                    src={sketch.url}
+                    src={resolveUrl(sketch.url)}
                     alt={FLOOR_LABEL(sketch.floor)}
                     className="w-full h-full object-contain"
                   />
@@ -1126,7 +1133,7 @@ const SketchSection = ({ productId }: { productId: string }) => {
             {editSketch && (
               <div className="aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle">
                 <img
-                  src={editSketch.url}
+                  src={resolveUrl(editSketch.url)}
                   alt=""
                   className="w-full h-full object-contain"
                 />
