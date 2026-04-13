@@ -6,6 +6,10 @@ import { z } from "@medusajs/framework/zod"
 import { CreateHousePlanSchema, UpdateHousePlanSchema } from "./admin/house-plans/validators"
 import { CreateVendorSchema, UpdateVendorSchema } from "./admin/vendors/validators"
 import { CreateVendorHousePlanSchema } from "./store/vendors/[id]/house-plans/validators"
+import {
+  CreateGalleryImageSchema,
+  UpdateGalleryImageSchema,
+} from "./store/vendors/[id]/house-plans/[planId]/gallery/validators"
 
 const HousePlanAdditionalDataSchema = z.object({
   title: z.string().min(1),
@@ -59,6 +63,16 @@ export default defineMiddlewares({
       matcher: "/admin/vendors/:id",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateVendorSchema)],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId/gallery",
+      method: "POST",
+      middlewares: [validateAndTransformBody(CreateGalleryImageSchema)],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId/gallery/:imageId",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateGalleryImageSchema)],
     },
   ],
 })
