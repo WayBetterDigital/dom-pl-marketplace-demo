@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { useVendorService } from '~/composables/services/useVendorService'
+import { useGalleryService, GALLERY_CATEGORIES } from '~/composables/services/useGalleryService'
+import type { GalleryCategory } from '~/composables/services/useGalleryService'
 import type { AppOrder } from '~/types/order'
 import type { AppHousePlan } from '~/types/house-plan'
 
@@ -57,9 +59,22 @@ const {
   createVendorHousePlan,
   deleteVendorHousePlan,
   listVendorPlanFamilies,
-  createVendorPlanFamily,
-  uploadHousePlanImages
+  createVendorPlanFamily
 } = useVendorService()
+
+const { uploadGalleryImage } = useGalleryService()
+
+const CATEGORY_LABELS: Record<GalleryCategory, string> = {
+  wizualizacje: 'Wizualizacje',
+  strefa_dzienna: 'Strefa dzienna',
+  kuchnia: 'Kuchnia',
+  lazienka: 'Łazienka'
+}
+
+const categoryOptions = GALLERY_CATEGORIES.map(c => ({
+  label: CATEGORY_LABELS[c],
+  value: c
+}))
 
 const slideoverOpen = ref(false)
 const submitting = ref(false)
@@ -69,6 +84,8 @@ const sourcePlanId = ref('')
 
 const selectedImages = ref<File[]>([])
 const imagePreviews = ref<string[]>([])
+const imageDescriptions = ref<string[]>([])
+const imageCategories = ref<GalleryCategory[]>([])
 
 function handleImageSelect(e: Event) {
   const input = e.target as HTMLInputElement
@@ -86,6 +103,8 @@ function handleImageSelect(e: Event) {
   valid.forEach((f) => {
     selectedImages.value.push(f)
     imagePreviews.value.push(URL.createObjectURL(f))
+    imageDescriptions.value.push('')
+    imageCategories.value.push('wizualizacje')
   })
   input.value = ''
 }
@@ -94,12 +113,16 @@ function removeSelectedImage(index: number) {
   URL.revokeObjectURL(imagePreviews.value[index]!)
   selectedImages.value.splice(index, 1)
   imagePreviews.value.splice(index, 1)
+  imageDescriptions.value.splice(index, 1)
+  imageCategories.value.splice(index, 1)
 }
 
 function clearImages() {
   imagePreviews.value.forEach(url => URL.revokeObjectURL(url))
   selectedImages.value = []
   imagePreviews.value = []
+  imageDescriptions.value = []
+  imageCategories.value = []
 }
 
 function validateForm(): boolean {
@@ -213,10 +236,16 @@ async function submitPlan() {
 
     if (selectedImages.value.length > 0) {
       try {
-        await uploadHousePlanImages(
-          route.query.id as string,
-          createdPlan.id,
-          selectedImages.value
+        await Promise.all(
+          selectedImages.value.map((file, i) =>
+            uploadGalleryImage(
+              route.query.id as string,
+              createdPlan.id,
+              file,
+              imageDescriptions.value[i] || undefined,
+              imageCategories.value[i]
+            )
+          )
         )
       } catch {
         toast.add({
@@ -753,25 +782,46 @@ const statusColor = (status: string) => {
 
           <!-- Zdjęcia projektu -->
           <div class="space-y-2">
-            <label class="text-sm font-medium text-default">Zdjęcia projektu</label>
+            <label class="text-sm font-medium text-default">Zdjęcia do galerii</label>
 
             <div
               v-if="imagePreviews.length"
-              class="grid grid-cols-3 gap-2"
+              class="space-y-2"
             >
               <div
                 v-for="(preview, i) in imagePreviews"
                 :key="i"
-                class="relative aspect-square rounded-lg overflow-hidden border border-default bg-muted group"
+                class="flex gap-3 border border-default rounded-lg p-2 bg-muted/20"
               >
-                <img
-                  :src="preview"
-                  class="w-full h-full object-cover"
-                  alt=""
-                >
+                <!-- Miniatura -->
+                <div class="shrink-0 w-16 h-16 rounded-md overflow-hidden border border-default bg-muted">
+                  <img
+                    :src="preview"
+                    class="w-full h-full object-cover"
+                    alt=""
+                  >
+                </div>
+
+                <!-- Pola -->
+                <div class="flex-1 min-w-0 space-y-1.5">
+                  <UInput
+                    v-model="imageDescriptions[i]"
+                    size="xs"
+                    placeholder="Opis zdjęcia (opcjonalny)"
+                  />
+                  <USelect
+                    v-model="imageCategories[i]"
+                    size="xs"
+                    :items="categoryOptions"
+                    value-key="value"
+                    label-key="label"
+                  />
+                </div>
+
+                <!-- Usuń -->
                 <button
                   type="button"
-                  class="absolute top-1 right-1 bg-black/60 hover:bg-black/80 rounded-full w-5 h-5 flex items-center justify-center cursor-pointer transition-colors"
+                  class="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 cursor-pointer transition-colors mt-0.5"
                   @click="removeSelectedImage(i)"
                 >
                   <UIcon
@@ -779,12 +829,6 @@ const statusColor = (status: string) => {
                     class="size-3 text-white"
                   />
                 </button>
-                <div
-                  v-if="i === 0"
-                  class="absolute bottom-1 left-1 bg-primary/80 text-white text-[10px] px-1.5 py-0.5 rounded"
-                >
-                  Miniatura
-                </div>
               </div>
             </div>
 
@@ -808,7 +852,7 @@ const statusColor = (status: string) => {
             </label>
 
             <p class="text-xs text-muted">
-              JPG, PNG, WebP · maks. 10 MB na plik · pierwsze zdjęcie będzie miniaturą
+              JPG, PNG, WebP · maks. 10 MB na plik
             </p>
           </div>
 
