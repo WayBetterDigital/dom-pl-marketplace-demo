@@ -101,7 +101,7 @@ const lightboxImage = computed(() => filteredImages.value[lightboxIndex.value])
 
     <!-- Plan title -->
     <h1 class="text-2xl font-bold text-default mb-6">
-      {{ plan?.title }} — Galeria
+      {{ plan?.title }}
     </h1>
 
     <!-- Loading skeleton -->
@@ -175,15 +175,14 @@ const lightboxImage = computed(() => filteredImages.value[lightboxIndex.value])
             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           >
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end">
-            <div
-              v-if="image.description"
-              class="w-full bg-linear-to-t from-black/70 to-transparent px-3 py-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200"
-            >
-              <p class="text-white text-xs line-clamp-2">
-                {{ image.description }}
-              </p>
-            </div>
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+          <div
+            v-if="image.description"
+            class="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent px-3 py-2"
+          >
+            <p class="text-white text-xs line-clamp-2">
+              {{ image.description }}
+            </p>
           </div>
           <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <UIcon name="i-lucide-zoom-in" class="size-5 text-white drop-shadow" />

@@ -685,7 +685,7 @@ const GallerySection = ({ productId }: { productId: string }) => {
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                     <button
                       type="button"
-                      className="bg-white/90 hover:bg-white text-ui-fg-base rounded px-2 py-1 text-xs font-medium cursor-pointer"
+                      className="bg-white/90 hover:bg-white text-black rounded px-2 py-1 text-xs font-medium cursor-pointer"
                       onClick={() => {
                         setEditImage(img)
                         setEditForm({
