@@ -25,7 +25,7 @@ const hasMultiple = computed(() => displayImages.value.length > 1)
 
 const carouselRef = useTemplateRef('carousel')
 const selectedIndex = ref(0)
-const mirrored = ref(false)
+const { mirrored } = usePlanMirror()
 
 watch(
   () => carouselRef.value?.emblaApi,
