@@ -404,6 +404,7 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
       </Container>
 
       <GallerySection productId={product.id} />
+      <SketchSection productId={product.id} />
 
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <Drawer.Content>
@@ -839,6 +840,339 @@ const GallerySection = ({ productId }: { productId: string }) => {
                 size="small"
                 isLoading={editMutation.isPending}
                 onClick={() => editImage && editMutation.mutate(editImage.id)}
+              >
+                Zapisz
+              </Button>
+            </div>
+          </Drawer.Footer>
+        </Drawer.Content>
+      </Drawer>
+    </>
+  )
+}
+
+// ─── Sketch section ─────────────────────────────────────────────────────────
+
+type HousePlanSketch = {
+  id: string
+  house_plan_id: string
+  url: string
+  floor: number
+  type: number
+  sort_order: number
+}
+
+const FLOOR_LABEL = (floor: number) => {
+  if (floor === 0) return "Parter"
+  if (floor === -1) return "Piwnica"
+  return `Piętro ${floor}`
+}
+
+// 0 = rzut, 1 = rzut z opisami
+const TYPE_LABEL: Record<number, string> = {
+  0: "Rzut",
+  1: "Rzut z opisami",
+}
+
+const FLOOR_OPTIONS = [
+  { value: "-1", label: "Piwnica" },
+  { value: "0", label: "Parter" },
+  { value: "1", label: "Piętro 1" },
+  { value: "2", label: "Piętro 2" },
+  { value: "3", label: "Piętro 3" },
+]
+
+const TYPE_OPTIONS = [
+  { value: "0", label: "Rzut" },
+  { value: "1", label: "Rzut z opisami pomieszczeń" },
+]
+
+const SketchSection = ({ productId }: { productId: string }) => {
+  const queryClient = useQueryClient()
+  const sketchKey = ["product-sketches", productId]
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [addOpen, setAddOpen] = useState(false)
+  const [addFloor, setAddFloor] = useState("0")
+  const [addType, setAddType] = useState("0")
+
+  const [editSketch, setEditSketch] = useState<HousePlanSketch | null>(null)
+  const [editFloor, setEditFloor] = useState("0")
+  const [editType, setEditType] = useState("szkic")
+
+  const { data: sketchData, isLoading } = useQuery({
+    queryKey: sketchKey,
+    queryFn: () =>
+      sdk.client.fetch<{ sketches: HousePlanSketch[] }>(
+        `/admin/products/${productId}/sketches`
+      ),
+  })
+
+  const sketches = sketchData?.sketches ?? []
+
+  const addMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const content = await toBase64(file)
+      return sdk.client.fetch(`/admin/products/${productId}/sketches`, {
+        method: "POST",
+        body: {
+          filename: file.name,
+          mimeType: file.type,
+          content,
+          floor: Number(addFloor),
+          type: Number(addType),
+          sort_order: sketches.length,
+        },
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sketchKey })
+      toast.success("Szkic dodany")
+      setAddOpen(false)
+      setAddFloor("0")
+      setAddType("0")
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    },
+    onError: (err: any) => {
+      const msg = err?.body?.message || err?.message
+      toast.error(msg || "Nie udało się dodać szkicu")
+    },
+  })
+
+  const editMutation = useMutation({
+    mutationFn: (sketchId: string) =>
+      sdk.client.fetch(`/admin/products/${productId}/sketches/${sketchId}`, {
+        method: "POST",
+        body: { floor: Number(editFloor), type: Number(editType) },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sketchKey })
+      toast.success("Szkic zaktualizowany")
+      setEditSketch(null)
+    },
+    onError: (err: any) => {
+      const msg = err?.body?.message || err?.message
+      toast.error(msg || "Nie udało się zaktualizować szkicu")
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (sketchId: string) =>
+      sdk.client.fetch(`/admin/products/${productId}/sketches/${sketchId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sketchKey })
+      toast.success("Szkic usunięty")
+    },
+    onError: () => toast.error("Nie udało się usunąć szkicu"),
+  })
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Plik za duży — maks. 10 MB")
+      return
+    }
+    addMutation.mutate(file)
+  }
+
+  if (isLoading) {
+    return (
+      <Container className="px-6 py-4">
+        <Text size="small" leading="compact" className="text-ui-fg-subtle">
+          Ładowanie szkiców...
+        </Text>
+      </Container>
+    )
+  }
+
+  return (
+    <>
+      <Container className="px-6 py-4 divide-y divide-ui-border-base">
+        <div className="flex items-center justify-between pb-4">
+          <Heading level="h2">Szkice kondygnacji</Heading>
+          <Button
+            size="small"
+            variant="secondary"
+            onClick={() => setAddOpen(true)}
+          >
+            Dodaj szkic
+          </Button>
+        </div>
+
+        {sketches.length === 0 ? (
+          <div className="py-6 text-center">
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              Brak szkiców kondygnacji.
+            </Text>
+          </div>
+        ) : (
+          <div className="pt-4 grid grid-cols-3 gap-3">
+            {sketches.map((sketch) => (
+              <div key={sketch.id} className="flex flex-col gap-1.5">
+                <div className="relative aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle group">
+                  <img
+                    src={sketch.url}
+                    alt={FLOOR_LABEL(sketch.floor)}
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      className="bg-white/90 hover:bg-white text-black rounded px-2 py-1 text-xs font-medium cursor-pointer"
+                      onClick={() => {
+                        setEditSketch(sketch)
+                        setEditFloor(String(sketch.floor))
+                        setEditType(String(sketch.type ?? 0))
+                      }}
+                    >
+                      Edytuj
+                    </button>
+                    <button
+                      type="button"
+                      className="bg-red-500/90 hover:bg-red-500 text-white rounded px-2 py-1 text-xs font-medium cursor-pointer"
+                      onClick={() => {
+                        if (!confirm("Usunąć ten szkic?")) return
+                        deleteMutation.mutate(sketch.id)
+                      }}
+                    >
+                      Usuń
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge size="xsmall" color="grey">
+                    {FLOOR_LABEL(sketch.floor)}
+                  </Badge>
+                  <Badge size="xsmall" color="blue">
+                    {TYPE_LABEL[sketch.type] ?? sketch.type}
+                  </Badge>
+
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Container>
+
+      {/* Add sketch drawer */}
+      <Drawer open={addOpen} onOpenChange={setAddOpen}>
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>Dodaj szkic kondygnacji</Drawer.Title>
+          </Drawer.Header>
+          <Drawer.Body className="flex flex-col gap-y-4 p-6">
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Kondygnacja</Label>
+              <Select value={addFloor} onValueChange={setAddFloor}>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  {FLOOR_OPTIONS.map((o) => (
+                    <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Rodzaj szkicu</Label>
+              <Select value={addType} onValueChange={setAddType}>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  {TYPE_OPTIONS.map((o) => (
+                    <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Plik szkicu</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="text-sm text-ui-fg-subtle file:mr-3 file:py-1 file:px-3 file:rounded file:border file:border-ui-border-base file:bg-ui-bg-subtle file:text-ui-fg-base file:cursor-pointer"
+                onChange={handleFileChange}
+              />
+              <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+                JPG, PNG, WebP · maks. 10 MB
+              </Text>
+            </div>
+          </Drawer.Body>
+          <Drawer.Footer>
+            <div className="flex justify-end gap-x-2">
+              <Drawer.Close asChild>
+                <Button size="small" variant="secondary" disabled={addMutation.isPending}>
+                  Anuluj
+                </Button>
+              </Drawer.Close>
+            </div>
+          </Drawer.Footer>
+        </Drawer.Content>
+      </Drawer>
+
+      {/* Edit sketch drawer */}
+      <Drawer open={!!editSketch} onOpenChange={(open) => !open && setEditSketch(null)}>
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>Edytuj szkic</Drawer.Title>
+          </Drawer.Header>
+          <Drawer.Body className="flex flex-col gap-y-4 p-6">
+            {editSketch && (
+              <div className="aspect-video rounded-lg overflow-hidden border border-ui-border-base bg-ui-bg-subtle">
+                <img
+                  src={editSketch.url}
+                  alt=""
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Kondygnacja</Label>
+              <Select value={editFloor} onValueChange={setEditFloor}>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  {FLOOR_OPTIONS.map((o) => (
+                    <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-y-1">
+              <Label size="small" weight="plus">Rodzaj szkicu</Label>
+              <Select value={editType} onValueChange={setEditType}>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  {TYPE_OPTIONS.map((o) => (
+                    <Select.Item key={o.value} value={o.value}>{o.label}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
+          </Drawer.Body>
+          <Drawer.Footer>
+            <div className="flex justify-end gap-x-2">
+              <Button
+                size="small"
+                variant="secondary"
+                onClick={() => setEditSketch(null)}
+                disabled={editMutation.isPending}
+              >
+                Anuluj
+              </Button>
+              <Button
+                size="small"
+                isLoading={editMutation.isPending}
+                onClick={() => editSketch && editMutation.mutate(editSketch.id)}
               >
                 Zapisz
               </Button>
