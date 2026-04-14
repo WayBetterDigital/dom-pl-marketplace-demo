@@ -139,6 +139,8 @@ const dimensionsLabel = computed(() => {
           </p>
         </div>
 
+        <PlanSketches :plan-id="id" />
+
         <section class="flex flex-col justify-end mt-auto">
           <!-- Warianty projektu -->
           <HousePlanCarousel

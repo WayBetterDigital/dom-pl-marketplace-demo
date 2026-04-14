@@ -1,0 +1,109 @@
+import { useMedusaClient } from '#imports'
+
+// 0 = rzut, 1 = rzut z opisami pomieszczeń
+export type SketchType = 0 | 1
+
+export interface HousePlanSketch {
+  id: string
+  house_plan_id: string
+  url: string
+  floor: number
+  type: SketchType
+  sort_order: number
+}
+
+export function floorLabel(floor: number): string {
+  if (floor === 0) return 'Parter'
+  if (floor === -1) return 'Piwnica'
+  return `Piętro ${floor}`
+}
+
+export const SKETCH_TYPE_LABEL: Record<SketchType, string> = {
+  0: 'Rzut',
+  1: 'Rzut z opisami pomieszczeń',
+}
+
+export const FLOOR_OPTIONS = [
+  { label: 'Piwnica', value: '-1' },
+  { label: 'Parter', value: '0' },
+  { label: 'Piętro 1', value: '1' },
+  { label: 'Piętro 2', value: '2' },
+  { label: 'Piętro 3', value: '3' },
+]
+
+export const TYPE_OPTIONS = [
+  { label: 'Rzut', value: '0' },
+  { label: 'Rzut z opisami', value: '1' },
+]
+
+export function useSketchService() {
+  const sdk = useMedusaClient()
+
+  async function getSketches(planId: string): Promise<HousePlanSketch[]> {
+    const response = await sdk.client.fetch<{ sketches: HousePlanSketch[] }>(
+      `/store/house-plans/${planId}/sketches`
+    )
+    return response.sketches || []
+  }
+
+  async function readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  async function createSketch(
+    planId: string,
+    data: { file: File; floor: number; type: SketchType; sort_order?: number }
+  ): Promise<HousePlanSketch> {
+    const content = await readFileAsBase64(data.file)
+    const response = await sdk.client.fetch<{ sketch: HousePlanSketch }>(
+      `/store/house-plans/${planId}/sketches`,
+      {
+        method: 'POST',
+        body: {
+          filename: data.file.name,
+          mimeType: data.file.type,
+          content,
+          floor: data.floor,
+          type: data.type,
+          sort_order: data.sort_order,
+        },
+      }
+    )
+    return response.sketch
+  }
+
+  async function updateSketch(
+    planId: string,
+    sketchId: string,
+    data: { file?: File; floor?: number; type?: SketchType; sort_order?: number }
+  ): Promise<HousePlanSketch> {
+    let body: Record<string, unknown> = {
+      floor: data.floor,
+      type: data.type,
+      sort_order: data.sort_order,
+    }
+    if (data.file) {
+      const content = await readFileAsBase64(data.file)
+      body = { ...body, filename: data.file.name, mimeType: data.file.type, content }
+    }
+    const response = await sdk.client.fetch<{ sketch: HousePlanSketch }>(
+      `/store/house-plans/${planId}/sketches/${sketchId}`,
+      { method: 'POST', body }
+    )
+    return response.sketch
+  }
+
+  async function deleteSketch(planId: string, sketchId: string): Promise<void> {
+    await sdk.client.fetch(
+      `/store/house-plans/${planId}/sketches/${sketchId}`,
+      { method: 'DELETE' }
+    )
+  }
+
+  return { getSketches, createSketch, updateSketch, deleteSketch }
+}

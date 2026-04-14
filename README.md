@@ -79,6 +79,14 @@ To seed database with basic house plans run this command
 docker exec medusa_backend npm run seed:house-plans
 ```
 
+## Sketch
+
+To see local sketches in medusa admin panel add this this backend .env
+
+```bash
+VITE_STOREFRONT_URL=http://localhost:3000
+```
+
 ## Publishable Key
 
 To ensure the frontend communicates correctly with the backend, generate a publishable key in the Medusa admin dashboard and add it to the frontend's `.env` file as `NUXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY`.

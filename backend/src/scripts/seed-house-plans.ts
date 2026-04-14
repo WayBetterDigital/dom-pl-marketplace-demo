@@ -274,6 +274,42 @@ const PLAN_IMAGES: Record<string, { thumbnail: string; images: string[] }> = {
   },
 }
 
+// floor: 0=parter, 1=piętro1, -1=piwnica | type: 0=rzut, 1=rzut z opisami
+type SketchEntry = { floor: number; type: 0 | 1; url: string }
+const PLAN_SKETCHES: Record<string, SketchEntry[]> = {
+  "Dom Jednorodzinny Klasyczny 120": [
+    { floor: 0, type: 0, url: "/imgs/szkice/parter_szkic_1.png" },
+    { floor: 0, type: 1, url: "/imgs/szkice/parter_opis_1.png" },
+    { floor: 1, type: 0, url: "/imgs/szkice/parter_szkic_2.png" },
+  ],
+  "Dom Parterowy Modern 90": [
+    { floor: 0, type: 0, url: "/imgs/szkice/parter_szkic_2.png" },
+  ],
+  "Dom z Poddaszem Rustykalny 150": [
+    { floor: 0, type: 0, url: "https://static5.redcart.pl/templates/images/thumb/4962/600/1200/pl/0/templates/images/products/4962/d9f5ef0e8e1b613fd0b0c5da77a1bce0.jpg" },
+    { floor: 0, type: 1, url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251239/source" },
+    { floor: 1, type: 0, url: "https://www.kreodom.pl/data/image/projects/48/12205/12205_plan_0.jpg/780/503" },
+  ],
+  "Dom Bliźniak Ekonomiczny 80": [
+    { floor: 0, type: 0, url: "/imgs/szkice/parter_szkic_2.png" },
+    { floor: 1, type: 0, url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666468/f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8.jpg" },
+  ],
+  "Rezydencja Premium 220": [
+    { floor: 0, type: 0, url: "/imgs/szkice/parter_szkic_1.png" },
+    { floor: 0, type: 1, url: "/imgs/szkice/parter_opis_1.png" },
+  ],
+  "Dom Willowy 160 – Wersja Klasyczna": [
+    { floor: 0, type: 0, url: "/imgs/szkice/parter_szkic_1.png" },
+    { floor: 0, type: 1, url: "/imgs/szkice/parter_opis_1.png" },
+    { floor: 1, type: 0, url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356218/c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4.jpg" },
+  ],
+  "Dom Willowy 160 – Wersja Nowoczesna": [
+    { floor: 0, type: 0, url: "/imgs/szkice/parter_szkic_2.png" },
+    { floor: 1, type: 0, url: "/imgs/szkice/parter_szkic_1.png" },
+    { floor: 1, type: 1, url: "/imgs/szkice/parter_opis_1.png" },
+  ],
+}
+
 // Gallery images per plan: { category, description, url }[]
 type GalleryEntry = { category: "wizualizacje" | "strefa_dzienna" | "kuchnia" | "lazienka"; description: string; url: string }
 const PLAN_GALLERY: Record<string, GalleryEntry[]> = {
@@ -479,4 +515,31 @@ export default async function seedHousePlans({ container }: ExecArgs) {
   }
 
   logger.info('Gallery images seeded successfully.')
+
+  // Seed sketch images
+  logger.info('Seeding sketch images...')
+
+  for (const plan of allPlans) {
+    const sketchEntries = PLAN_SKETCHES[plan.title]
+    if (!sketchEntries?.length) continue
+
+    const existing = await housePlanService.listHousePlanSketches({ house_plan_id: plan.id })
+    if (existing.length > 0) {
+      logger.info(`Sketches for "${plan.title}" already seeded (${existing.length}), skipping.`)
+      continue
+    }
+
+    await housePlanService.createHousePlanSketches(
+      sketchEntries.map((entry, i) => ({
+        house_plan_id: plan.id,
+        url: entry.url,
+        floor: entry.floor,
+        type: entry.type,
+        sort_order: i,
+      }))
+    )
+    logger.info(`Seeded ${sketchEntries.length} sketch(es) for "${plan.title}"`)
+  }
+
+  logger.info('Sketch images seeded successfully.')
 }
