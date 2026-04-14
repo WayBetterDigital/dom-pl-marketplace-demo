@@ -14,6 +14,8 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
+    // Server-only: used by SSR inside Docker (overridden by NUXT_MEDUSA_BASE_URL)
+    medusaBaseUrl: 'http://localhost:9000',
     public: {
       medusa: {
         baseUrl: 'http://localhost:9000', // overridden by NUXT_PUBLIC_MEDUSA_BASE_URL

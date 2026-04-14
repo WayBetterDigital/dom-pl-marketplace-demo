@@ -1,4 +1,4 @@
-import { useMedusaClient } from '#imports'
+import { useRuntimeConfig } from '#imports'
 import { mapToAppHousePlan } from '~/utils/mappers/housePlanMapper'
 import type { AppHousePlan } from '~/types/house-plan'
 
@@ -20,7 +20,18 @@ export interface HousePlanListParams {
 }
 
 export function useHousePlanService() {
-  const sdk = useMedusaClient()
+  const config = useRuntimeConfig()
+
+  // SSR uses internal Docker URL; browser uses public URL
+  const baseUrl = import.meta.server
+    ? (config.medusaBaseUrl as string)
+    : config.public.medusa.baseUrl
+
+  const fetchOptions = {
+    headers: {
+      'x-publishable-api-key': config.public.medusa.publishableKey as string
+    }
+  }
 
   async function listHousePlans(params?: HousePlanListParams): Promise<{ data: AppHousePlan[], count: number, limit: number, offset: number }> {
     try {
@@ -47,8 +58,8 @@ export function useHousePlanService() {
       }
 
       const queryString = queryParams.toString()
-      const url = `/store/house-plans${queryString ? `?${queryString}` : ''}`
-      const response = await sdk.client.fetch<{ house_plans: any[], count: number, limit: number, offset: number }>(url)
+      const url = `${baseUrl}/store/house-plans${queryString ? `?${queryString}` : ''}`
+      const response = await $fetch<{ house_plans: any[], count: number, limit: number, offset: number }>(url, fetchOptions)
 
       return {
         data: (response.house_plans || []).map(mapToAppHousePlan),
@@ -56,7 +67,8 @@ export function useHousePlanService() {
         limit: response.limit || 0,
         offset: response.offset || 0
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to list house plans:', error)
       throw error
     }
@@ -64,9 +76,10 @@ export function useHousePlanService() {
 
   async function getHousePlan(id: string): Promise<AppHousePlan> {
     try {
-      const response = await sdk.client.fetch<{ house_plan: any }>(`/store/house-plans/${id}`)
+      const response = await $fetch<{ house_plan: any }>(`${baseUrl}/store/house-plans/${id}`, fetchOptions)
       return mapToAppHousePlan(response.house_plan)
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`Failed to retrieve house plan with ID ${id}:`, error)
       throw error
     }
