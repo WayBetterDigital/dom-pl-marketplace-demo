@@ -3,7 +3,6 @@ export const HOUSE_PLAN_FIELDS = [
   "title",
   "price",
   "description",
-  "img",
   "house_area",
   "boiler_room_area",
   "rooms",

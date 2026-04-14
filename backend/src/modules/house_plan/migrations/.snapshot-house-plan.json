@@ -79,6 +79,15 @@
           "expression": "CREATE INDEX IF NOT EXISTS \"IDX_plan_family_deleted_at\" ON \"plan_family\" (\"deleted_at\") WHERE deleted_at IS NULL"
         },
         {
+          "keyName": "IDX_plan_family_vendor_id_name_unique",
+          "columnNames": [],
+          "composite": false,
+          "constraint": false,
+          "primary": false,
+          "unique": false,
+          "expression": "CREATE UNIQUE INDEX IF NOT EXISTS \"IDX_plan_family_vendor_id_name_unique\" ON \"plan_family\" (\"vendor_id\", \"name\") WHERE deleted_at IS NULL"
+        },
+        {
           "keyName": "plan_family_pkey",
           "columnNames": [
             "id"
@@ -124,15 +133,6 @@
         },
         "description": {
           "name": "description",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "text"
-        },
-        "img": {
-          "name": "img",
           "type": "text",
           "unsigned": false,
           "autoincrement": false,

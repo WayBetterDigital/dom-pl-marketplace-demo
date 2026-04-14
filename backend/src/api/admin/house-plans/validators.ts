@@ -4,7 +4,6 @@ export const CreateHousePlanSchema = z.object({
   title: z.string().min(1),
   price: z.number().positive(),
   description: z.string().optional(),
-  img: z.string().url().optional(),
   house_area: z.number().positive(),
   boiler_room_area: z.number().positive().optional(),
   rooms: z.number().int().positive(),

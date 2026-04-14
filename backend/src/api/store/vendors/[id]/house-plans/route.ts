@@ -18,6 +18,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       ...HOUSE_PLAN_FIELDS.map(f => `house_plans.${f}`),
       "house_plans.family.id",
       "house_plans.family.name",
+      "house_plans.product.id",
+      "house_plans.product.thumbnail",
+      "house_plans.product.images.id",
+      "house_plans.product.images.url",
     ],
     filters: { id },
   })
@@ -58,7 +62,6 @@ export async function POST(
               manage_inventory: false,
             },
           ],
-          thumbnail: body.img ?? undefined,
           ...(salesChannelId ? { sales_channels: [{ id: salesChannelId }] } : {}),
         },
       ],

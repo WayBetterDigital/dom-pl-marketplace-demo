@@ -19,6 +19,9 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       "vendor.average_rating",
       "vendor.house_plans.id",
       "product.variants.id",
+      "product.thumbnail",
+      "product.images.id",
+      "product.images.url",
     ],
     filters: { id: req.params.id },
   })

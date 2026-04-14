@@ -119,20 +119,11 @@ const dimensionsLabel = computed(() => {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
       <!-- Left Column: Image and Description -->
       <div class="flex flex-col gap-8">
-        <div class="aspect-video bg-elevated flex items-center justify-center rounded-xl overflow-hidden border border-default">
-          <NuxtImg
-            v-if="plan?.img"
-            :src="plan.img"
-            class="w-full h-full object-cover"
-            alt="Wizualizacja projektu"
-          />
-          <NuxtImg
-            v-else
-            src="/imgs/home_plan1.jpg"
-            class="w-full h-full object-cover opacity-50"
-            alt="Brak zdjęcia"
-          />
-        </div>
+        <PlanImageGallery
+          :images="plan?.images ?? []"
+          :thumbnail="plan?.thumbnail"
+          mode="full"
+        />
 
         <div
           v-if="plan?.description"

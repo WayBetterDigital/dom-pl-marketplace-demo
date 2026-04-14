@@ -13,7 +13,6 @@ export interface AppHousePlan {
   title: string
   price: number
   description: string | null
-  img: string | null
   houseArea: number
   boilerRoomArea: number | null
   rooms: number
@@ -35,6 +34,8 @@ export interface AppHousePlan {
   fireplace: boolean | null
   terrace: boolean | null
   houseType: string | null
+  thumbnail: string | null
+  images: { id: string, url: string }[]
   vendor?: HousePlanVendor | null
   variantId?: string | null
   family?: { id: string, name: string } | null

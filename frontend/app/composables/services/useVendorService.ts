@@ -93,5 +93,53 @@ export function useVendorService() {
     return response.plan_family
   }
 
-  return { listVendors, getVendor, getVendorHousePlans, getVendorOrders, createVendorHousePlan, deleteVendorHousePlan, listVendorPlanFamilies, createVendorPlanFamily }
+  async function readFileAsBase64(file: File): Promise<{ filename: string; content: string; mimeType: string }> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const dataUri = reader.result as string
+        const content = dataUri.split(',')[1] ?? ''
+        resolve({ filename: file.name, content, mimeType: file.type || 'image/jpeg' })
+      }
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  async function uploadHousePlanImages(
+    vendorId: string,
+    planId: string,
+    files: File[]
+  ): Promise<{ images: { url: string }[]; thumbnail: string | null }> {
+    const fileData = await Promise.all(files.map(readFileAsBase64))
+    const response = await sdk.client.fetch<{ images: { url: string }[]; thumbnail: string | null }>(
+      `/store/vendors/${vendorId}/house-plans/${planId}/images`,
+      { method: 'POST', body: { files: fileData } }
+    )
+    return response
+  }
+
+  async function deleteHousePlanImage(
+    vendorId: string,
+    planId: string,
+    imageUrl: string
+  ): Promise<void> {
+    await sdk.client.fetch(
+      `/store/vendors/${vendorId}/house-plans/${planId}/images`,
+      { method: 'DELETE', body: { url: imageUrl } }
+    )
+  }
+
+  return {
+    listVendors,
+    getVendor,
+    getVendorHousePlans,
+    getVendorOrders,
+    createVendorHousePlan,
+    deleteVendorHousePlan,
+    listVendorPlanFamilies,
+    createVendorPlanFamily,
+    uploadHousePlanImages,
+    deleteHousePlanImage,
+  }
 }

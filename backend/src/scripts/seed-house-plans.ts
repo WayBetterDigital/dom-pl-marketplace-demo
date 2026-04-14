@@ -1,6 +1,6 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
-import { createProductsWorkflow, updateProductsWorkflow } from "@medusajs/medusa/core-flows"
+import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
 import { HOUSE_PLAN_MODULE } from "../modules/house_plan"
 import { VENDOR_MODULE } from "../modules/vendor"
 import VendorModuleService from "../modules/vendor/service"
@@ -209,6 +209,69 @@ const FAMILY_PLAN_TITLES = [
   "Dom Willowy 160 – Wersja Nowoczesna",
 ]
 
+// Zdjęcia się z https://www.extradom.pl/ bo archon blokuje linki zdjęć :/
+const PLAN_IMAGES: Record<string, { thumbnail: string; images: string[] }> = {
+  // https://www.extradom.pl/projekt-domu-tracja-2-WOE1114
+  "Dom Jednorodzinny Klasyczny 120": {
+    thumbnail: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/62114/424180/0d1a6a6fb7a421aed4227d852780b8d002d8d021da438c83e05e8a9d7a256da6.jpg",
+    images: [
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/424181/source",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/424182/source",
+    ],
+  },
+  // https://www.extradom.pl/gotowy-dom-prefabrykowany-parterowy-120c-HFX1017
+  "Dom Parterowy Modern 90": {
+    thumbnail: "https://i.wpimg.pl/831x/wpcdn.pl/extradom/designs/76463/661266/a5a33e2e3ac9024551b071fc9ff66132bb91fb7d414a7986da31b65245242fc4.webp",
+    images: [
+      "https://i.wpimg.pl/c/1920x720/wpcdn.pl/extradom/designs/76463/661267/7e0adb3c320b4b60e5e8cceceffad7b3a9bc5dde90282afb4e0c5eebfd4dd6f6.webp",
+      "https://i.wpimg.pl/c/1920x720/wpcdn.pl/extradom/designs/76463/661268/c5be811d25a359b9385c1779cea5bb221ef0aa4a5267498fc627898324bfc8ee.webp",
+    ],
+  },
+  // https://www.extradom.pl/projekt-domu-letniskowego-orlean-5-dom-letniskowy-z-poddaszem-SLN2264
+  "Dom z Poddaszem Rustykalny 150": {
+    thumbnail: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251234/source",
+    images: [
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251235/source",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251237/source",
+    ],
+  },
+  // https://www.extradom.pl/projekt-domu-aps-107-wariant-2-LUA1671
+  "Dom Bliźniak Ekonomiczny 80": {
+    thumbnail: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666463/6ad5bab65be08b3a335efc17c7cfd3b6d8925a5989ffdc114f77b6a192d000af.jpg",
+    images: [
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666465/5adfcdbfcdb15be413f73d51bfed0c57de1c8459cd9ad7c3b22cd322f2207ce3.jpg",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666464/976cda35aad0ad98a16f26b534597f5f61b9b5321ba0e19e97f2ac746876b069.jpg",
+    ],
+  },
+  // https://www.extradom.pl/projekt-domu-nowoczesny-1-WAW1031
+  "Rezydencja Premium 220": {
+    thumbnail: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341078/source",
+    images: [
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341078/source",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341079/source",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341085/source",
+    ],
+  },
+  // https://www.extradom.pl/projekt-domu-willa-floryda-WAH1685
+  "Dom Willowy 160 – Wersja Klasyczna": {
+    thumbnail: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356213/7d28b834a0d6b1949dca44734aa9e9a62be2a9392545f465cbab42c052e1feeb.jpg",
+    images: [
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356212/75fde7a98fa5c9570c33cb760ddaa787d0219108d1d5967f10c52d338e2b14b5.jpg",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356214/bbb120ae98d76fc1f8f12743f5b23dfa44ec074b10b751b187849717fc6b3062.jpg",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356215/3dd0d6c405c62d4b0a8eded0f75d4c623ada628c624699f2f000c69eda499849.jpg",
+    ],
+  },
+  // https://www.extradom.pl/projekt-domu-willa-floryda-7-WAH2141
+  "Dom Willowy 160 – Wersja Nowoczesna": {
+    thumbnail: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641334/c76115778cc476f9ff9ae7738a9002a5008769a7dd1d474b0679a9267fb4b793.jpg",
+    images: [
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641333/98f9562da76f56ab3b195d85fda266bb9b8ad954a3474ee857101a0f5eacb181.jpg",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641332/34b2cd461cb147961bd19cc1e88f6d75759a3a1947b725afcca0df0704e42953.jpg",
+      "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641335/55e56b603cb1869ed1294337808de0bee1ea802482a3019a8acff39aa9e10c45.jpg",
+    ],
+  },
+}
+
 export default async function seedHousePlans({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const housePlanService = container.resolve(HOUSE_PLAN_MODULE)
@@ -254,7 +317,8 @@ export default async function seedHousePlans({ container }: ExecArgs) {
           {
             title: plan.title,
             status: ProductStatus.PUBLISHED,
-            thumbnail: plan.img ?? undefined,
+            thumbnail: PLAN_IMAGES[plan.title]?.thumbnail,
+            images: PLAN_IMAGES[plan.title]?.images?.map(url => ({ url })),
             options: [{ title: 'Wersja', values: ['Dokumentacja'] }],
             variants: [
               {
@@ -279,28 +343,7 @@ export default async function seedHousePlans({ container }: ExecArgs) {
   }
 
 
-  // Sync thumbnails for products that are already linked but may be missing a thumbnail
-  logger.info('Syncing thumbnails for existing linked products...')
-  for (const plan of allPlans) {
-    if (!plan.img) continue
-    const { data: linked } = await query.graph({
-      entity: 'house_plan',
-      fields: ['id', 'product.id', 'product.thumbnail'],
-      filters: { id: plan.id },
-    })
-    const linkedProduct = linked[0]?.product as any
-    if (linkedProduct?.id && !linkedProduct?.thumbnail) {
-      await updateProductsWorkflow(container).run({
-        input: {
-          selector: { id: linkedProduct.id },
-          update: { thumbnail: plan.img },
-        },
-      })
-      logger.info(`Updated thumbnail for product ${linkedProduct.id}`)
-    }
-  }
-  logger.info('Thumbnails synced.')
-    logger.info('Finished linking house plans to Medusa products.')
+  logger.info('Finished linking house plans to Medusa products.')
 
   // Link house plans to vendors
   const vendorService: VendorModuleService = container.resolve(VENDOR_MODULE)

@@ -6,7 +6,6 @@ const HousePlan = model.define("house_plan", {
   title: model.text(),
   price: model.bigNumber(),
   description: model.text().nullable(),
-  img: model.text().nullable(),
   house_area: model.number(),
   boiler_room_area: model.number().nullable(),
   rooms: model.number(),

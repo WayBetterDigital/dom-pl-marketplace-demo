@@ -108,8 +108,8 @@ const handleCheckout = async () => {
             >
               <div class="size-20 shrink-0 bg-[var(--ui-bg-elevated)] rounded-lg flex items-center justify-center overflow-hidden border border-[var(--ui-border)]">
                 <NuxtImg
-                  v-if="item.variant?.product?.house_plan?.img"
-                  :src="item.variant.product.house_plan.img"
+                  v-if="item.variant?.product?.thumbnail"
+                  :src="item.variant.product.thumbnail"
                   class="w-full h-full object-cover"
                   alt="Miniatura projektu"
                 />
