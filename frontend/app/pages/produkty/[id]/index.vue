@@ -104,7 +104,7 @@ const dimensionsLabel = computed(() => {
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
     <!-- Back Button -->
-    <div class="mb-6">
+    <div class="mb-4">
       <UButton
         to="/produkty"
         color="neutral"
@@ -124,6 +124,8 @@ const dimensionsLabel = computed(() => {
           :thumbnail="plan?.thumbnail"
           mode="full"
         />
+
+        <PlanTabNav :plan-id="id" class="mb-8" />
 
         <div
           v-if="plan?.description"

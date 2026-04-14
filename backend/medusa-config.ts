@@ -11,6 +11,9 @@ module.exports = defineConfig({
       resolve: "./src/modules/vendor",
     },
     {
+      resolve: "./src/modules/gallery",
+    },
+    {
       resolve: "@medusajs/medusa/file",
       options: {
         providers: [

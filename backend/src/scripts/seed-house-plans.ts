@@ -4,6 +4,8 @@ import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
 import { HOUSE_PLAN_MODULE } from "../modules/house_plan"
 import { VENDOR_MODULE } from "../modules/vendor"
 import VendorModuleService from "../modules/vendor/service"
+import { GALLERY_MODULE } from "../modules/gallery"
+import type GalleryModuleService from "../modules/gallery/service"
 
 const PLANS = [
   {
@@ -272,6 +274,48 @@ const PLAN_IMAGES: Record<string, { thumbnail: string; images: string[] }> = {
   },
 }
 
+// Gallery images per plan: { category, description, url }[]
+type GalleryEntry = { category: "wizualizacje" | "strefa_dzienna" | "kuchnia" | "lazienka"; description: string; url: string }
+const PLAN_GALLERY: Record<string, GalleryEntry[]> = {
+  "Dom Jednorodzinny Klasyczny 120": [
+    { category: "wizualizacje", description: "Widok frontowy", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/62114/424180/0d1a6a6fb7a421aed4227d852780b8d002d8d021da438c83e05e8a9d7a256da6.jpg" },
+    { category: "wizualizacje", description: "Widok od ogrodu", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/424181/source" },
+    { category: "strefa_dzienna", description: "Salon z jadalnią", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/424182/source" },
+  ],
+  "Dom Parterowy Modern 90": [
+    { category: "wizualizacje", description: "Elewacja frontowa", url: "https://i.wpimg.pl/831x/wpcdn.pl/extradom/designs/76463/661266/a5a33e2e3ac9024551b071fc9ff66132bb91fb7d414a7986da31b65245242fc4.webp" },
+    { category: "wizualizacje", description: "Widok z boku", url: "https://i.wpimg.pl/c/1920x720/wpcdn.pl/extradom/designs/76463/661267/7e0adb3c320b4b60e5e8cceceffad7b3a9bc5dde90282afb4e0c5eebfd4dd6f6.webp" },
+    { category: "strefa_dzienna", description: "Otwarty salon", url: "https://i.wpimg.pl/c/1920x720/wpcdn.pl/extradom/designs/76463/661268/c5be811d25a359b9385c1779cea5bb221ef0aa4a5267498fc627898324bfc8ee.webp" },
+  ],
+  "Dom z Poddaszem Rustykalny 150": [
+    { category: "wizualizacje", description: "Elewacja główna", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251234/source" },
+    { category: "wizualizacje", description: "Widok od tyłu", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251235/source" },
+    { category: "strefa_dzienna", description: "Poddasze użytkowe", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/251237/source" },
+  ],
+  "Dom Bliźniak Ekonomiczny 80": [
+    { category: "wizualizacje", description: "Elewacja bliźniaka", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666463/6ad5bab65be08b3a335efc17c7cfd3b6d8925a5989ffdc114f77b6a192d000af.jpg" },
+    { category: "wizualizacje", description: "Widok boczny", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666465/5adfcdbfcdb15be413f73d51bfed0c57de1c8459cd9ad7c3b22cd322f2207ce3.jpg" },
+    { category: "strefa_dzienna", description: "Salon parterowy", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/76914/666464/976cda35aad0ad98a16f26b534597f5f61b9b5321ba0e19e97f2ac746876b069.jpg" },
+  ],
+  "Rezydencja Premium 220": [
+    { category: "wizualizacje", description: "Elewacja rezydencji", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341078/source" },
+    { category: "wizualizacje", description: "Widok nocny", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341079/source" },
+    { category: "strefa_dzienna", description: "Salon z kominkiem", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/media/341085/source" },
+  ],
+  "Dom Willowy 160 – Wersja Klasyczna": [
+    { category: "wizualizacje", description: "Elewacja klasyczna", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356213/7d28b834a0d6b1949dca44734aa9e9a62be2a9392545f465cbab42c052e1feeb.jpg" },
+    { category: "wizualizacje", description: "Widok od ogrodu", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356212/75fde7a98fa5c9570c33cb760ddaa787d0219108d1d5967f10c52d338e2b14b5.jpg" },
+    { category: "strefa_dzienna", description: "Taras z wejściem", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356214/bbb120ae98d76fc1f8f12743f5b23dfa44ec074b10b751b187849717fc6b3062.jpg" },
+    { category: "strefa_dzienna", description: "Salon z antresolą", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/55454/356215/3dd0d6c405c62d4b0a8eded0f75d4c623ada628c624699f2f000c69eda499849.jpg" },
+  ],
+  "Dom Willowy 160 – Wersja Nowoczesna": [
+    { category: "wizualizacje", description: "Elewacja nowoczesna", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641334/c76115778cc476f9ff9ae7738a9002a5008769a7dd1d474b0679a9267fb4b793.jpg" },
+    { category: "wizualizacje", description: "Widok nocny", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641333/98f9562da76f56ab3b195d85fda266bb9b8ad954a3474ee857101a0f5eacb181.jpg" },
+    { category: "strefa_dzienna", description: "Strefa dzienna z tarasem", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641332/34b2cd461cb147961bd19cc1e88f6d75759a3a1947b725afcca0df0704e42953.jpg" },
+    { category: "strefa_dzienna", description: "Salon otwarty", url: "https://i.wpimg.pl/1272x715/wpcdn.pl/extradom/designs/75517/641335/55e56b603cb1869ed1294337808de0bee1ea802482a3019a8acff39aa9e10c45.jpg" },
+  ],
+}
+
 export default async function seedHousePlans({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const housePlanService = container.resolve(HOUSE_PLAN_MODULE)
@@ -353,16 +397,24 @@ export default async function seedHousePlans({ container }: ExecArgs) {
     logger.info('Linking house plans to vendors...')
     const half = Math.ceil(allPlans.length / 2)
     for (const plan of allPlans.slice(0, half)) {
-      await link.create({
-        [VENDOR_MODULE]: { vendor_id: vendors[0].id },
-        [HOUSE_PLAN_MODULE]: { house_plan_id: plan.id },
-      })
+      try {
+        await link.create({
+          [VENDOR_MODULE]: { vendor_id: vendors[0].id },
+          [HOUSE_PLAN_MODULE]: { house_plan_id: plan.id },
+        })
+      } catch {
+        logger.info(`Vendor link for "${plan.title}" already exists, skipping.`)
+      }
     }
     for (const plan of allPlans.slice(half)) {
-      await link.create({
-        [VENDOR_MODULE]: { vendor_id: vendors[1].id },
-        [HOUSE_PLAN_MODULE]: { house_plan_id: plan.id },
-      })
+      try {
+        await link.create({
+          [VENDOR_MODULE]: { vendor_id: vendors[1].id },
+          [HOUSE_PLAN_MODULE]: { house_plan_id: plan.id },
+        })
+      } catch {
+        logger.info(`Vendor link for "${plan.title}" already exists, skipping.`)
+      }
     }
     logger.info('House plans linked to vendors successpełnay.')
   }
@@ -399,4 +451,32 @@ export default async function seedHousePlans({ container }: ExecArgs) {
   } else {
     logger.info('Vendor "Projekty Malinowski" not found, skipping family setup.')
   }
+
+  // Seed gallery images
+  logger.info('Seeding gallery images...')
+  const galleryService: GalleryModuleService = container.resolve(GALLERY_MODULE)
+
+  for (const plan of allPlans) {
+    const galleryEntries = PLAN_GALLERY[plan.title]
+    if (!galleryEntries?.length) continue
+
+    const existing = await galleryService.listGalleryImages({ house_plan_id: plan.id })
+    if (existing.length > 0) {
+      logger.info(`Gallery for "${plan.title}" already seeded (${existing.length} images), skipping.`)
+      continue
+    }
+
+    await galleryService.createGalleryImages(
+      galleryEntries.map((entry, i) => ({
+        house_plan_id: plan.id,
+        url: entry.url,
+        description: entry.description,
+        category: entry.category,
+        sort_order: i,
+      }))
+    )
+    logger.info(`Seeded ${galleryEntries.length} gallery images for "${plan.title}"`)
+  }
+
+  logger.info('Gallery images seeded successfully.')
 }
