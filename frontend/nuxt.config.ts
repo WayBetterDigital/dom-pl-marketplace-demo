@@ -33,6 +33,12 @@ export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
       include: ['qs']
+    },
+    server: {
+      hmr: {
+        host: 'localhost',
+        port: 24678
+      }
     }
   },
 
