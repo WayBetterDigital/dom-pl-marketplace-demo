@@ -74,5 +74,26 @@ export default defineMiddlewares({
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateGalleryImageSchema)],
     },
+    // Large file uploads — increase body size limit to 50 MB
+    {
+      matcher: "/store/house-plans/:id/files",
+      method: "POST",
+      bodyParser: { sizeLimit: "50mb" },
+    },
+    {
+      matcher: "/store/house-plans/:id/sketches",
+      method: "POST",
+      bodyParser: { sizeLimit: "20mb" },
+    },
+    {
+      matcher: "/store/house-plans/:id/sketches/:sketchId",
+      method: "POST",
+      bodyParser: { sizeLimit: "20mb" },
+    },
+    {
+      matcher: "/admin/products/:id/sketches",
+      method: "POST",
+      bodyParser: { sizeLimit: "20mb" },
+    },
   ],
 })

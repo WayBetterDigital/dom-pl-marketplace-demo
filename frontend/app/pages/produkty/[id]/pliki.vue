@@ -56,6 +56,22 @@ async function handleFileChange(e: Event) {
   await refresh()
 }
 
+// ── Download ───────────────────────────────────────────────────────────────────
+async function handleDownload(url: string, name: string) {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = name
+    a.click()
+    URL.revokeObjectURL(blobUrl)
+  } catch {
+    window.open(url, '_blank')
+  }
+}
+
 // ── Delete ─────────────────────────────────────────────────────────────────────
 const deletingId = ref<string | null>(null)
 
@@ -179,13 +195,13 @@ const isUploading = computed(() => uploadingFiles.value.length > 0)
 
         <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <UButton
-            :href="file.url"
-            target="_blank"
             icon="i-lucide-download"
             size="xs"
             color="neutral"
             variant="ghost"
             aria-label="Pobierz"
+            class="cursor-pointer"
+            @click="handleDownload(file.url, file.name)"
           />
           <UButton
             icon="i-lucide-trash-2"
@@ -194,6 +210,7 @@ const isUploading = computed(() => uploadingFiles.value.length > 0)
             variant="ghost"
             :loading="deletingId === file.id"
             aria-label="Usuń"
+            class="cursor-pointer"
             @click="handleDelete(file.id, file.name)"
           />
         </div>
