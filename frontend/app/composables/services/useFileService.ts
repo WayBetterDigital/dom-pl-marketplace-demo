@@ -1,4 +1,4 @@
-import { useMedusaClient } from '#imports'
+import { useMedusaClient, useRuntimeConfig } from '#imports'
 
 export interface HousePlanFile {
   id: string
@@ -37,6 +37,9 @@ export function fileIconColor(mimeType: string): string {
 
 export function useFileService() {
   const sdk = useMedusaClient()
+  const config = useRuntimeConfig()
+  const baseUrl = (config.public.medusa as any).baseUrl as string
+  const publishableKey = (config.public.medusa as any).publishableKey as string
 
   async function getFiles(planId: string): Promise<HousePlanFile[]> {
     const response = await sdk.client.fetch<{ files: HousePlanFile[] }>(
@@ -46,20 +49,22 @@ export function useFileService() {
   }
 
   async function uploadFile(planId: string, file: File): Promise<HousePlanFile> {
-    const content = await readFileAsBase64(file)
-    const response = await sdk.client.fetch<{ file: HousePlanFile }>(
-      `/store/house-plans/${planId}/files`,
-      {
-        method: 'POST',
-        body: {
-          filename: file.name,
-          mimeType: file.type,
-          content,
-          size: file.size
-        }
-      }
-    )
-    return response.file
+    const form = new FormData()
+    form.append('file', file)
+
+    const res = await fetch(`${baseUrl}/store/house-plans/${planId}/files`, {
+      method: 'POST',
+      headers: { 'x-publishable-api-key': publishableKey },
+      body: form
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error((err as any).message || `Błąd ${res.status}`)
+    }
+
+    const data = await res.json()
+    return data.file
   }
 
   async function deleteFile(planId: string, fileId: string): Promise<void> {
@@ -70,13 +75,4 @@ export function useFileService() {
   }
 
   return { getFiles, uploadFile, deleteFile }
-}
-
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
