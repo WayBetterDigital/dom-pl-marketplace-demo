@@ -17,8 +17,7 @@ const { mirrored } = usePlanMirror()
 
 const { data: sketches, refresh } = await useAsyncData(
   `sketches-${props.planId}`,
-  () => getSketches(props.planId),
-  { server: false }
+  () => getSketches(props.planId)
 )
 
 const sketchesByFloor = computed(() => {

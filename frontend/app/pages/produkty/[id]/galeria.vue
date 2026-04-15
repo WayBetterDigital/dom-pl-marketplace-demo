@@ -31,8 +31,7 @@ if (error.value || !plan.value) {
 
 const { data: allImages, refresh: refreshGallery } = await useAsyncData(
   `gallery-${id}`,
-  () => getGallery(id),
-  { server: false }
+  () => getGallery(id)
 )
 
 const CATEGORY_LABELS: Record<GalleryCategory, string> = {
