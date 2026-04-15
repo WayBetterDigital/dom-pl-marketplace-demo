@@ -39,8 +39,12 @@ async function handleFileChange(e: Event) {
   if (!selected.length) return
 
   for (const file of selected) {
-    if (file.size > 100 * 1024 * 1024) {
-      toast.add({ title: `${file.name} jest za duży`, description: 'Maks. 100 MB', color: 'warning' })
+    if (file.size > 35 * 1024 * 1024) {
+      toast.add({
+        title: 'Plik jest za duży',
+        description: `${file.name} przekracza limit 35 MB. Zmniejsz plik i spróbuj ponownie.`,
+        color: 'warning'
+      })
       continue
     }
     uploadingFiles.value.push({ name: file.name, progress: true })
