@@ -3,6 +3,8 @@ defineProps<{ planId: string }>()
 
 const route = useRoute()
 const isGaleria = computed(() => route.path.endsWith('/galeria'))
+const isPliki = computed(() => route.path.endsWith('/pliki'))
+const isDane = computed(() => !isGaleria.value && !isPliki.value)
 </script>
 
 <template>
@@ -12,7 +14,7 @@ const isGaleria = computed(() => route.path.endsWith('/galeria'))
         :to="`/produkty/${planId}`"
         :class="[
           'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
-          !isGaleria
+          isDane
             ? 'border-primary text-primary'
             : 'border-transparent text-muted hover:text-default hover:border-default'
         ]"
@@ -29,6 +31,17 @@ const isGaleria = computed(() => route.path.endsWith('/galeria'))
         ]"
       >
         Galeria
+      </NuxtLink>
+      <NuxtLink
+        :to="`/produkty/${planId}/pliki`"
+        :class="[
+          'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+          isPliki
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted hover:text-default hover:border-default'
+        ]"
+      >
+        Pliki
       </NuxtLink>
     </div>
   </nav>
