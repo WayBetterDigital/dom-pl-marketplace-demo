@@ -38,6 +38,10 @@ export default defineNuxtConfig({
       hmr: {
         host: 'localhost',
         port: 24678
+      },
+      watch: {
+        usePolling: true,
+        interval: 500
       }
     }
   },
