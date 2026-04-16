@@ -75,19 +75,26 @@ export function useCartService() {
     return newCart
   }
 
+  const CART_FIELDS = { fields: '*items,*items.variant,*items.variant.product,*items.variant.product.house_plan' }
+
   async function addToCart(variantId: string, quantity = 1) {
     const currentCart = await getCart()
-    const { cart: updatedCart } = await sdk.store.cart.createLineItem(currentCart.id, {
-      variant_id: variantId,
-      quantity
-    })
+    const { cart: updatedCart } = await sdk.store.cart.createLineItem(
+      currentCart.id,
+      { variant_id: variantId, quantity },
+      CART_FIELDS
+    )
     cart.value = updatedCart
     return updatedCart
   }
 
   async function removeFromCart(lineItemId: string) {
     const currentCart = await getCart()
-    const { cart: updatedCart } = await sdk.store.cart.deleteLineItem(currentCart.id, lineItemId)
+    const { cart: updatedCart } = await sdk.store.cart.deleteLineItem(
+      currentCart.id,
+      lineItemId,
+      CART_FIELDS
+    )
     cart.value = updatedCart
     return updatedCart
   }
