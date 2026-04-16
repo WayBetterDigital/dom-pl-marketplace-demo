@@ -7,8 +7,9 @@ const trackRef = ref<HTMLElement | null>(null)
 const idx = ref(0)
 
 const scroll = (dir: 1 | -1) => {
-  const max = props.plans.length - 2
-  idx.value = idx.value + dir * 2 > max ? 0 : idx.value + dir * 2 < 0 ? max : idx.value + dir * 2
+  const max = props.plans.length - 1
+  const next = idx.value + dir
+  idx.value = next > max ? 0 : next < 0 ? max : next
   const item = trackRef.value?.children[idx.value] as HTMLElement | undefined
   trackRef.value?.scrollTo({ left: item?.offsetLeft ?? 0, behavior: 'smooth' })
 }
