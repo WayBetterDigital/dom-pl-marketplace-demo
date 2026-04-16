@@ -13,20 +13,18 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(404).json({ message: "Szkic nie istnieje" })
   }
 
-  const { filename, content, mimeType, floor, type, sort_order } = req.body as {
-    filename?: string
-    content?: string
-    mimeType?: string
-    floor?: number
-    type?: number
-    sort_order?: number
+  const { floor, type, sort_order } = req.body as {
+    floor?: string
+    type?: string
+    sort_order?: string
   }
 
-  const safeType = type === 0 || type === 1 ? type : undefined
+  const parsedFloor = floor !== undefined ? parseInt(floor) : undefined
+  const safeType = type === "1" ? 1 : type === "0" ? 0 : undefined
 
-  if (floor !== undefined || safeType !== undefined) {
+  if (parsedFloor !== undefined || safeType !== undefined) {
     const current = existing[0]
-    const targetFloor = floor !== undefined ? floor : current.floor
+    const targetFloor = parsedFloor !== undefined ? parsedFloor : current.floor
     const targetType = safeType !== undefined ? safeType : (current.type as number)
 
     const conflict = await housePlanService.listHousePlanSketches({
@@ -46,18 +44,24 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   }
 
   let newUrl: string | undefined
-  if (filename && content && mimeType) {
+  const multerFile = (req as any).file as { originalname: string; mimetype: string; buffer: Buffer } | undefined
+  if (multerFile) {
     const fileService = req.scope.resolve<IFileModuleService>(Modules.FILE)
-    const uploaded = await fileService.createFiles({ filename, mimeType, content, access: "public" })
+    const uploaded = await fileService.createFiles({
+      filename: multerFile.originalname,
+      mimeType: multerFile.mimetype,
+      content: multerFile.buffer.toString("base64"),
+      access: "public",
+    })
     newUrl = (uploaded as any).url as string
   }
 
   const updated = await housePlanService.updateHousePlanSketches({
     id: sketchId,
     ...(newUrl !== undefined ? { url: newUrl } : {}),
-    ...(floor !== undefined ? { floor } : {}),
+    ...(parsedFloor !== undefined ? { floor: parsedFloor } : {}),
     ...(safeType !== undefined ? { type: safeType } : {}),
-    ...(sort_order !== undefined ? { sort_order } : {}),
+    ...(sort_order !== undefined ? { sort_order: parseInt(sort_order) } : {}),
   })
 
   res.json({ sketch: updated })

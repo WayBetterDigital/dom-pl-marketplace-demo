@@ -8,49 +8,25 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params
   const housePlanService = req.scope.resolve<HousePlanModuleService>(HOUSE_PLAN_MODULE)
 
-  const sketches = await housePlanService.listHousePlanSketches(
+  const files = await housePlanService.listHousePlanFiles(
     { house_plan_id: id },
-    { order: { floor: "ASC", sort_order: "ASC" } }
+    { order: { sort_order: "ASC", created_at: "ASC" } }
   )
 
-  res.json({ sketches })
+  res.json({ files })
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params
-  const multerFile = (req as any).file as { originalname: string; mimetype: string; buffer: Buffer } | undefined
+  const multerFile = (req as any).file as { originalname: string; mimetype: string; buffer: Buffer; size: number } | undefined
 
   if (!multerFile) {
     return res.status(400).json({ message: "Wymagany plik (pole: file)" })
   }
 
-  const { floor, type, sort_order } = req.body as {
-    floor?: string
-    type?: string
-    sort_order?: string
-  }
-
   const housePlanService = req.scope.resolve<HousePlanModuleService>(HOUSE_PLAN_MODULE)
-
-  const safeFloor = floor !== undefined ? parseInt(floor) : 0
-  const safeType = type === "1" ? 1 : 0
-
-  const existing = await housePlanService.listHousePlanSketches({
-    house_plan_id: id,
-    floor: safeFloor,
-    type: safeType,
-  })
-
-  if (existing.length > 0) {
-    const typeLabel = safeType === 0 ? "Rzut" : "Rzut z opisami"
-    const floorLabel =
-      safeFloor === 0 ? "Parter" : safeFloor === -1 ? "Piwnica" : `Piętro ${safeFloor}`
-    return res
-      .status(409)
-      .json({ message: `${typeLabel} dla kondygnacji "${floorLabel}" już istnieje` })
-  }
-
   const fileService = req.scope.resolve<IFileModuleService>(Modules.FILE)
+
   const uploaded = await fileService.createFiles({
     filename: multerFile.originalname,
     mimeType: multerFile.mimetype,
@@ -59,13 +35,16 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   })
   const url = (uploaded as any).url as string
 
-  const sketch = await housePlanService.createHousePlanSketches({
+  const existingFiles = await housePlanService.listHousePlanFiles({ house_plan_id: id })
+
+  const file = await housePlanService.createHousePlanFiles({
     house_plan_id: id,
     url,
-    floor: safeFloor,
-    type: safeType,
-    sort_order: sort_order !== undefined ? parseInt(sort_order) : 0,
+    name: multerFile.originalname,
+    mime_type: multerFile.mimetype,
+    size: multerFile.size,
+    sort_order: existingFiles.length,
   })
 
-  res.status(201).json({ sketch })
+  res.status(201).json({ file })
 }

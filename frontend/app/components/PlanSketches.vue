@@ -56,7 +56,7 @@ function handleFileChange(e: Event) {
   const file = input.files?.[0]
   if (!file) return
   if (file.size > 10 * 1024 * 1024) {
-    formError.value = 'Plik jest za duży (maks. 10 MB)'
+    formError.value = 'Plik jest za duży (maks. 20 MB)'
     return
   }
   formFile.value = file
@@ -138,7 +138,6 @@ async function handleDelete(sketch: HousePlanSketch) {
     deleteSubmitting.value = false
   }
 }
-
 </script>
 
 <template>
@@ -152,6 +151,7 @@ async function handleDelete(sketch: HousePlanSketch) {
         icon="i-lucide-plus"
         size="sm"
         variant="outline"
+        class="cursor-pointer"
         @click="openAdd"
       >
         Dodaj szkic
@@ -292,14 +292,17 @@ async function handleDelete(sketch: HousePlanSketch) {
                 @change="handleFileChange"
               >
               <div class="flex items-center gap-2 border border-dashed border-default rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors">
-                <UIcon name="i-lucide-image-plus" class="size-5 text-muted shrink-0" />
+                <UIcon
+                  name="i-lucide-image-plus"
+                  class="size-5 text-muted shrink-0 cursor-pointer"
+                />
                 <span class="text-sm text-muted">
                   {{ formFile ? formFile.name : 'Wybierz plik...' }}
                 </span>
               </div>
             </label>
             <p class="text-xs text-muted">
-              JPG, PNG, WebP · maks. 10 MB
+              JPG, PNG, WebP · maks. 20 MB
             </p>
           </div>
 
@@ -339,12 +342,14 @@ async function handleDelete(sketch: HousePlanSketch) {
         <UButton
           color="neutral"
           variant="ghost"
+          class="cursor-pointer"
           @click="closeModal"
         >
           Anuluj
         </UButton>
         <UButton
           :loading="formSubmitting"
+          class="cursor-pointer"
           @click="submitForm"
         >
           {{ editingSketch ? 'Zapisz' : 'Dodaj' }}
