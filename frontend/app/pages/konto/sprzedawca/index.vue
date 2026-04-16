@@ -128,25 +128,40 @@ function clearImages() {
 function validateForm(): boolean {
   const e: Partial<PlanForm> = {}
   if (!form.value.title.trim()) e.title = 'Tytuł jest wymagany'
-  if (!form.value.price || isNaN(Number(form.value.price)))
-    e.price = 'Podaj poprawną cenę'
-  if (!form.value.house_area || isNaN(Number(form.value.house_area)))
-    e.house_area = 'Podaj powierzchnię'
-  if (!form.value.rooms || isNaN(Number(form.value.rooms)))
-    e.rooms = 'Podaj liczbę pokoi'
-  if (
-    !form.value.bathrooms_and_wc
-    || isNaN(Number(form.value.bathrooms_and_wc))
-  )
-    e.bathrooms_and_wc = 'Podaj liczbę łazienek'
-  if (!form.value.plot_dimensions.trim())
-    e.plot_dimensions = 'Wymiary działki są wymagane'
+  if (!form.value.price || isNaN(Number(form.value.price))) e.price = 'Podaj poprawną cenę'
+  if (!form.value.house_area || isNaN(Number(form.value.house_area))) e.house_area = 'Podaj powierzchnię'
+  if (!form.value.rooms || isNaN(Number(form.value.rooms))) e.rooms = 'Podaj liczbę pokoi'
+  if (!form.value.bathrooms_and_wc || isNaN(Number(form.value.bathrooms_and_wc))) e.bathrooms_and_wc = 'Podaj liczbę łazienek'
+  if (!form.value.plot_dimensions.trim()) e.plot_dimensions = 'Wymiary działki są wymagane'
+  if (!form.value.floors || isNaN(Number(form.value.floors))) e.floors = 'Podaj liczbę kondygnacji'
+  if (!form.value.building_height || isNaN(Number(form.value.building_height))) e.building_height = 'Podaj wysokość'
+  if (!form.value.building_width || isNaN(Number(form.value.building_width))) e.building_width = 'Podaj szerokość'
+  if (!form.value.building_length || isNaN(Number(form.value.building_length))) e.building_length = 'Podaj długość'
+  if (!form.value.building_footprint || isNaN(Number(form.value.building_footprint))) e.building_footprint = 'Podaj pow. zabudowy'
+  if (!form.value.total_area || isNaN(Number(form.value.total_area))) e.total_area = 'Podaj pow. całkowitą'
+  if (!form.value.roof_type) e.roof_type = 'Wybierz rodzaj dachu'
+  if (!form.value.garage) e.garage = 'Wybierz opcję'
+  if (!form.value.basement) e.basement = 'Wybierz opcję'
+  if (!form.value.fireplace) e.fireplace = 'Wybierz opcję'
+  if (!form.value.terrace) e.terrace = 'Wybierz opcję'
+  if (!form.value.house_type) e.house_type = 'Wybierz typ domu'
+  if (!form.value.architectural_style) e.architectural_style = 'Wybierz styl'
+  if (!form.value.energy_standard) e.energy_standard = 'Wybierz standard'
   formErrors.value = e
   return Object.keys(e).length === 0
 }
 
 async function submitPlan() {
-  if (!validateForm()) return
+  if (!validateForm()) {
+    toast.add({
+      title: 'Uzupełnij wymagane pola',
+      description: 'Wszystkie pola oznaczone * muszą być wypełnione przed opublikowaniem planu.',
+      color: 'warning'
+    })
+    await nextTick()
+    document.querySelector<HTMLElement>('[data-form-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
   submitting.value = true
   try {
     let familyId
@@ -745,14 +760,10 @@ const statusColor = (status: string) => {
             <UInput
               v-model="form.title"
               placeholder="np. Dom Parterowy 120"
+              :color="formErrors.title ? 'error' : undefined"
               @input="formErrors.title = undefined"
             />
-            <p
-              v-if="formErrors.title"
-              class="text-xs text-error"
-            >
-              {{ formErrors.title }}
-            </p>
+            <p v-if="formErrors.title" data-form-error class="text-xs text-error">{{ formErrors.title }}</p>
           </div>
 
           <div class="space-y-1">
@@ -761,14 +772,10 @@ const statusColor = (status: string) => {
               v-model="form.price"
               type="number"
               placeholder="2990"
+              :color="formErrors.price ? 'error' : undefined"
               @input="formErrors.price = undefined"
             />
-            <p
-              v-if="formErrors.price"
-              class="text-xs text-error"
-            >
-              {{ formErrors.price }}
-            </p>
+            <p v-if="formErrors.price" data-form-error class="text-xs text-error">{{ formErrors.price }}</p>
           </div>
 
           <div class="space-y-1">
@@ -916,14 +923,10 @@ const statusColor = (status: string) => {
                 v-model="form.house_area"
                 type="number"
                 placeholder="120"
+                :color="formErrors.house_area ? 'error' : undefined"
                 @input="formErrors.house_area = undefined"
               />
-              <p
-                v-if="formErrors.house_area"
-                class="text-xs text-error"
-              >
-                {{ formErrors.house_area }}
-              </p>
+              <p v-if="formErrors.house_area" data-form-error class="text-xs text-error">{{ formErrors.house_area }}</p>
             </div>
             <div class="space-y-1">
               <label class="text-sm font-medium text-default">Pow. kotłowni (m²)</label>
@@ -939,14 +942,10 @@ const statusColor = (status: string) => {
                 v-model="form.rooms"
                 type="number"
                 placeholder="4"
+                :color="formErrors.rooms ? 'error' : undefined"
                 @input="formErrors.rooms = undefined"
               />
-              <p
-                v-if="formErrors.rooms"
-                class="text-xs text-error"
-              >
-                {{ formErrors.rooms }}
-              </p>
+              <p v-if="formErrors.rooms" data-form-error class="text-xs text-error">{{ formErrors.rooms }}</p>
             </div>
             <div class="space-y-1">
               <label class="text-sm font-medium text-default">Łazienki i WC *</label>
@@ -954,14 +953,10 @@ const statusColor = (status: string) => {
                 v-model="form.bathrooms_and_wc"
                 type="number"
                 placeholder="2"
+                :color="formErrors.bathrooms_and_wc ? 'error' : undefined"
                 @input="formErrors.bathrooms_and_wc = undefined"
               />
-              <p
-                v-if="formErrors.bathrooms_and_wc"
-                class="text-xs text-error"
-              >
-                {{ formErrors.bathrooms_and_wc }}
-              </p>
+              <p v-if="formErrors.bathrooms_and_wc" data-form-error class="text-xs text-error">{{ formErrors.bathrooms_and_wc }}</p>
             </div>
           </div>
 
@@ -970,14 +965,10 @@ const statusColor = (status: string) => {
             <UInput
               v-model="form.plot_dimensions"
               placeholder="15x20"
+              :color="formErrors.plot_dimensions ? 'error' : undefined"
               @input="formErrors.plot_dimensions = undefined"
             />
-            <p
-              v-if="formErrors.plot_dimensions"
-              class="text-xs text-error"
-            >
-              {{ formErrors.plot_dimensions }}
-            </p>
+            <p v-if="formErrors.plot_dimensions" data-form-error class="text-xs text-error">{{ formErrors.plot_dimensions }}</p>
           </div>
 
           <div class="space-y-1">
@@ -996,52 +987,70 @@ const statusColor = (status: string) => {
           </p>
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Kondygnacje</label>
+              <label class="text-sm font-medium text-default">Kondygnacje *</label>
               <UInput
                 v-model="form.floors"
                 type="number"
                 placeholder="2"
+                :color="formErrors.floors ? 'error' : undefined"
+                @input="formErrors.floors = undefined"
               />
+              <p v-if="formErrors.floors" data-form-error class="text-xs text-error">{{ formErrors.floors }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Wysokość (m)</label>
+              <label class="text-sm font-medium text-default">Wysokość (m) *</label>
               <UInput
                 v-model="form.building_height"
                 type="number"
                 placeholder="8.5"
+                :color="formErrors.building_height ? 'error' : undefined"
+                @input="formErrors.building_height = undefined"
               />
+              <p v-if="formErrors.building_height" data-form-error class="text-xs text-error">{{ formErrors.building_height }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Szerokość (m)</label>
+              <label class="text-sm font-medium text-default">Szerokość (m) *</label>
               <UInput
                 v-model="form.building_width"
                 type="number"
                 placeholder="11.5"
+                :color="formErrors.building_width ? 'error' : undefined"
+                @input="formErrors.building_width = undefined"
               />
+              <p v-if="formErrors.building_width" data-form-error class="text-xs text-error">{{ formErrors.building_width }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Długość (m)</label>
+              <label class="text-sm font-medium text-default">Długość (m) *</label>
               <UInput
                 v-model="form.building_length"
                 type="number"
                 placeholder="9.5"
+                :color="formErrors.building_length ? 'error' : undefined"
+                @input="formErrors.building_length = undefined"
               />
+              <p v-if="formErrors.building_length" data-form-error class="text-xs text-error">{{ formErrors.building_length }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Pow. zabudowy (m²)</label>
+              <label class="text-sm font-medium text-default">Pow. zabudowy (m²) *</label>
               <UInput
                 v-model="form.building_footprint"
                 type="number"
                 placeholder="72"
+                :color="formErrors.building_footprint ? 'error' : undefined"
+                @input="formErrors.building_footprint = undefined"
               />
+              <p v-if="formErrors.building_footprint" data-form-error class="text-xs text-error">{{ formErrors.building_footprint }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Pow. całkowita (m²)</label>
+              <label class="text-sm font-medium text-default">Pow. całkowita (m²) *</label>
               <UInput
                 v-model="form.total_area"
                 type="number"
                 placeholder="138"
+                :color="formErrors.total_area ? 'error' : undefined"
+                @input="formErrors.total_area = undefined"
               />
+              <p v-if="formErrors.total_area" data-form-error class="text-xs text-error">{{ formErrors.total_area }}</p>
             </div>
           </div>
 
@@ -1053,7 +1062,7 @@ const statusColor = (status: string) => {
           </p>
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Rodzaj dachu</label>
+              <label class="text-sm font-medium text-default">Rodzaj dachu *</label>
               <USelect
                 v-model="form.roof_type"
                 :items="[
@@ -1063,7 +1072,10 @@ const statusColor = (status: string) => {
                   { label: 'Jednospadowy', value: 'jednospadowy' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.roof_type ? 'error' : undefined"
+                @change="formErrors.roof_type = undefined"
               />
+              <p v-if="formErrors.roof_type" data-form-error class="text-xs text-error">{{ formErrors.roof_type }}</p>
             </div>
             <div
               v-if="form.roof_type != 'płaski'"
@@ -1086,7 +1098,7 @@ const statusColor = (status: string) => {
           </p>
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Garaż</label>
+              <label class="text-sm font-medium text-default">Garaż *</label>
               <USelect
                 v-model="form.garage"
                 :items="[
@@ -1096,10 +1108,13 @@ const statusColor = (status: string) => {
                   { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.garage ? 'error' : undefined"
+                @change="formErrors.garage = undefined"
               />
+              <p v-if="formErrors.garage" data-form-error class="text-xs text-error">{{ formErrors.garage }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Piwnica</label>
+              <label class="text-sm font-medium text-default">Piwnica *</label>
               <USelect
                 v-model="form.basement"
                 :items="[
@@ -1108,10 +1123,13 @@ const statusColor = (status: string) => {
                   { label: 'Pełna', value: 'pełna' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.basement ? 'error' : undefined"
+                @change="formErrors.basement = undefined"
               />
+              <p v-if="formErrors.basement" data-form-error class="text-xs text-error">{{ formErrors.basement }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Kominek</label>
+              <label class="text-sm font-medium text-default">Kominek *</label>
               <USelect
                 v-model="form.fireplace"
                 :items="[
@@ -1119,10 +1137,13 @@ const statusColor = (status: string) => {
                   { label: 'Nie', value: 'nie' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.fireplace ? 'error' : undefined"
+                @change="formErrors.fireplace = undefined"
               />
+              <p v-if="formErrors.fireplace" data-form-error class="text-xs text-error">{{ formErrors.fireplace }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Taras</label>
+              <label class="text-sm font-medium text-default">Taras *</label>
               <USelect
                 v-model="form.terrace"
                 :items="[
@@ -1130,7 +1151,10 @@ const statusColor = (status: string) => {
                   { label: 'Nie', value: 'nie' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.terrace ? 'error' : undefined"
+                @change="formErrors.terrace = undefined"
               />
+              <p v-if="formErrors.terrace" data-form-error class="text-xs text-error">{{ formErrors.terrace }}</p>
             </div>
           </div>
 
@@ -1142,7 +1166,7 @@ const statusColor = (status: string) => {
           </p>
           <div class="grid grid-cols-1 gap-3">
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Typ domu</label>
+              <label class="text-sm font-medium text-default">Typ domu *</label>
               <USelect
                 v-model="form.house_type"
                 :items="[
@@ -1151,10 +1175,13 @@ const statusColor = (status: string) => {
                   { label: 'Rekreacyjny', value: 'rekreacyjny' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.house_type ? 'error' : undefined"
+                @change="formErrors.house_type = undefined"
               />
+              <p v-if="formErrors.house_type" data-form-error class="text-xs text-error">{{ formErrors.house_type }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Styl architektoniczny</label>
+              <label class="text-sm font-medium text-default">Styl architektoniczny *</label>
               <USelect
                 v-model="form.architectural_style"
                 :items="[
@@ -1164,10 +1191,13 @@ const statusColor = (status: string) => {
                   { label: 'Skandynawski', value: 'skandynawski' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.architectural_style ? 'error' : undefined"
+                @change="formErrors.architectural_style = undefined"
               />
+              <p v-if="formErrors.architectural_style" data-form-error class="text-xs text-error">{{ formErrors.architectural_style }}</p>
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium text-default">Standard energetyczny</label>
+              <label class="text-sm font-medium text-default">Standard energetyczny *</label>
               <USelect
                 v-model="form.energy_standard"
                 :items="[
@@ -1176,7 +1206,10 @@ const statusColor = (status: string) => {
                   { label: 'Pasywny', value: 'pasywny' }
                 ]"
                 placeholder="Wybierz..."
+                :color="formErrors.energy_standard ? 'error' : undefined"
+                @change="formErrors.energy_standard = undefined"
               />
+              <p v-if="formErrors.energy_standard" data-form-error class="text-xs text-error">{{ formErrors.energy_standard }}</p>
             </div>
           </div>
         </div>
