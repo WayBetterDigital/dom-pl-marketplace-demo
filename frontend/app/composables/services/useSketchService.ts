@@ -1,4 +1,4 @@
-import { useMedusaClient, useRuntimeConfig } from '#imports'
+import { useRuntimeConfig } from '#imports'
 
 // 0 = rzut, 1 = rzut z opisami pomieszczeń
 export type SketchType = 0 | 1
@@ -37,71 +37,86 @@ export const TYPE_OPTIONS = [
 ]
 
 export function useSketchService() {
-  const sdk = useMedusaClient()
   const config = useRuntimeConfig()
-  const baseUrl = (config.public.medusa as any).baseUrl as string
-  const publishableKey = (config.public.medusa as any).publishableKey as string
+
+  const baseUrl = import.meta.server
+    ? (config.medusaBaseUrl as string)
+    : config.public.medusa.baseUrl
+
+  const publishableKey = config.public.medusa.publishableKey as string
 
   async function getSketches(planId: string): Promise<HousePlanSketch[]> {
-    const response = await sdk.client.fetch<{ sketches: HousePlanSketch[] }>(
-      `/store/house-plans/${planId}/sketches`
+    const response = await $fetch<{ sketches: HousePlanSketch[] }>(
+      `${baseUrl}/store/house-plans/${planId}/sketches`,
+      { headers: { 'x-publishable-api-key': publishableKey } }
     )
     return response.sketches || []
   }
 
+  async function readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '')
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
   async function createSketch(
     planId: string,
-    data: { file: File; floor: number; type: SketchType; sort_order?: number }
+    data: { file: File, floor: number, type: SketchType, sort_order?: number }
   ): Promise<HousePlanSketch> {
-    const form = new FormData()
-    form.append('file', data.file)
-    form.append('floor', String(data.floor))
-    form.append('type', String(data.type))
-    if (data.sort_order !== undefined) form.append('sort_order', String(data.sort_order))
-
-    const res = await fetch(`${baseUrl}/store/house-plans/${planId}/sketches`, {
-      method: 'POST',
-      headers: { 'x-publishable-api-key': publishableKey },
-      body: form
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error((err as any).message || `Błąd ${res.status}`)
-    }
-
-    return (await res.json()).sketch
+    const content = await readFileAsBase64(data.file)
+    const response = await $fetch<{ sketch: HousePlanSketch }>(
+      `${baseUrl}/store/house-plans/${planId}/sketches`,
+      {
+        method: 'POST',
+        headers: { 'x-publishable-api-key': publishableKey },
+        body: {
+          filename: data.file.name,
+          mimeType: data.file.type,
+          content,
+          floor: data.floor,
+          type: data.type,
+          sort_order: data.sort_order
+        }
+      }
+    )
+    return response.sketch
   }
 
   async function updateSketch(
     planId: string,
     sketchId: string,
-    data: { file?: File; floor?: number; type?: SketchType; sort_order?: number }
+    data: { file?: File, floor?: number, type?: SketchType, sort_order?: number }
   ): Promise<HousePlanSketch> {
-    const form = new FormData()
-    if (data.file) form.append('file', data.file)
-    if (data.floor !== undefined) form.append('floor', String(data.floor))
-    if (data.type !== undefined) form.append('type', String(data.type))
-    if (data.sort_order !== undefined) form.append('sort_order', String(data.sort_order))
-
-    const res = await fetch(`${baseUrl}/store/house-plans/${planId}/sketches/${sketchId}`, {
-      method: 'POST',
-      headers: { 'x-publishable-api-key': publishableKey },
-      body: form
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error((err as any).message || `Błąd ${res.status}`)
+    let body: Record<string, unknown> = {
+      floor: data.floor,
+      type: data.type,
+      sort_order: data.sort_order
     }
-
-    return (await res.json()).sketch
+    if (data.file) {
+      const content = await readFileAsBase64(data.file)
+      body = { ...body, filename: data.file.name, mimeType: data.file.type, content }
+    }
+    const response = await $fetch<{ sketch: HousePlanSketch }>(
+      `${baseUrl}/store/house-plans/${planId}/sketches/${sketchId}`,
+      {
+        method: 'POST',
+        headers: { 'x-publishable-api-key': publishableKey },
+        body
+      }
+    )
+    return response.sketch
   }
 
   async function deleteSketch(planId: string, sketchId: string): Promise<void> {
-    await sdk.client.fetch(
-      `/store/house-plans/${planId}/sketches/${sketchId}`,
-      { method: 'DELETE' }
+    await $fetch(
+      `${baseUrl}/store/house-plans/${planId}/sketches/${sketchId}`,
+      {
+        method: 'DELETE',
+        headers: { 'x-publishable-api-key': publishableKey }
+      }
     )
   }
 
