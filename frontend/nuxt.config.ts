@@ -33,6 +33,16 @@ export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
       include: ['qs']
+    },
+    server: {
+      hmr: {
+        host: 'localhost',
+        port: 24678
+      },
+      watch: {
+        usePolling: true,
+        interval: 500
+      }
     }
   },
 

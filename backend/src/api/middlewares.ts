@@ -3,6 +3,7 @@ import {
   validateAndTransformBody,
 } from "@medusajs/framework/http"
 import { z } from "@medusajs/framework/zod"
+import multer from "multer"
 import { CreateHousePlanSchema, UpdateHousePlanSchema } from "./admin/house-plans/validators"
 import { CreateVendorSchema, UpdateVendorSchema } from "./admin/vendors/validators"
 import { CreateVendorHousePlanSchema } from "./store/vendors/[id]/house-plans/validators"
@@ -10,6 +11,8 @@ import {
   CreateGalleryImageSchema,
   UpdateGalleryImageSchema,
 } from "./store/vendors/[id]/house-plans/[planId]/gallery/validators"
+
+const upload = multer({ storage: multer.memoryStorage() })
 
 const HousePlanAdditionalDataSchema = z.object({
   title: z.string().min(1),
@@ -73,6 +76,30 @@ export default defineMiddlewares({
       matcher: "/store/vendors/:id/house-plans/:planId/gallery/:imageId",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateGalleryImageSchema)],
+    },
+    // Multipart file uploads — disable JSON body parser, use multer
+    {
+      matcher: "/store/house-plans/:id/files",
+      method: "POST",
+      bodyParser: false,
+      middlewares: [upload.single("file")],
+    },
+    {
+      matcher: "/store/house-plans/:id/sketches",
+      method: "POST",
+      bodyParser: false,
+      middlewares: [upload.single("file")],
+    },
+    {
+      matcher: "/store/house-plans/:id/sketches/:sketchId",
+      method: "POST",
+      bodyParser: false,
+      middlewares: [upload.single("file")],
+    },
+    {
+      matcher: "/admin/products/:id/sketches",
+      method: "POST",
+      bodyParser: { sizeLimit: "20mb" },
     },
   ],
 })

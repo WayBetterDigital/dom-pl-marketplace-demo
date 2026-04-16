@@ -64,7 +64,7 @@ export function useSketchService() {
 
   async function createSketch(
     planId: string,
-    data: { file: File; floor: number; type: SketchType; sort_order?: number }
+    data: { file: File, floor: number, type: SketchType, sort_order?: number }
   ): Promise<HousePlanSketch> {
     const content = await readFileAsBase64(data.file)
     const response = await $fetch<{ sketch: HousePlanSketch }>(
@@ -88,7 +88,7 @@ export function useSketchService() {
   async function updateSketch(
     planId: string,
     sketchId: string,
-    data: { file?: File; floor?: number; type?: SketchType; sort_order?: number }
+    data: { file?: File, floor?: number, type?: SketchType, sort_order?: number }
   ): Promise<HousePlanSketch> {
     let body: Record<string, unknown> = {
       floor: data.floor,
