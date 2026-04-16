@@ -227,7 +227,7 @@ async function handleDelete(sketch: HousePlanSketch) {
 
         <div class="absolute bottom-2 right-2 z-10 flex gap-2">
           <button
-            v-if="group.withLabels"
+            v-if="group.withLabels && group.base"
             type="button"
             :aria-label="showLabels[group.floor] ? 'Ukryj opisy pomieszczeń' : 'Pokaż opisy pomieszczeń'"
             :class="[
