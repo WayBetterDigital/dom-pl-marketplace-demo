@@ -1,11 +1,43 @@
-import { useRuntimeConfig } from '#imports'
+import { useMedusaClient, useRuntimeConfig } from '#imports'
 import { mapToAppVendor } from '~/utils/mappers/vendorMapper'
 import { mapToAppHousePlan } from '~/utils/mappers/housePlanMapper'
 import type { AppVendor, VendorApiResponse } from '~/types/vendor'
 import type { AppHousePlan } from '~/types/house-plan'
 import type { AppOrder } from '~/types/order'
 
+export interface VendorHousePlanPayload {
+  title: string
+  price: number
+  description?: string
+  house_area: number
+  boiler_room_area?: number
+  rooms: number
+  bathrooms_and_wc: number
+  plot_dimensions: string
+  min_plot_dimensions_after_adaptation?: string
+  floors?: number
+  building_width?: number
+  building_length?: number
+  building_footprint?: number
+  total_area?: number
+  roof_type?: string
+  roof_angle?: number
+  garage?: string
+  architectural_style?: string
+  energy_standard?: string
+  basement?: string
+  building_height?: number
+  fireplace?: boolean
+  terrace?: boolean
+  house_type?: string
+  family_id?: string
+}
+
+export type CreateVendorHousePlanPayload = VendorHousePlanPayload
+export type UpdateVendorHousePlanPayload = Partial<VendorHousePlanPayload>
+
 export function useVendorService() {
+  const sdk = useMedusaClient()
   const config = useRuntimeConfig()
 
   const baseUrl = import.meta.server
@@ -79,20 +111,24 @@ export function useVendorService() {
     })
   }
 
-  async function createVendorHousePlan(vendorId: string, data: {
-    title: string
-    price: number
-    description?: string
-    img?: string
-    house_area: number
-    boiler_room_area?: number
-    rooms: number
-    bathrooms_and_wc: number
-    plot_dimensions: string
-    min_plot_dimensions_after_adaptation?: string
-  }): Promise<AppHousePlan> {
+  async function createVendorHousePlan(
+    vendorId: string,
+    data: CreateVendorHousePlanPayload
+  ): Promise<AppHousePlan> {
     const response = await $fetch<{ house_plan: any }>(
       `${baseUrl}/store/vendors/${vendorId}/house-plans`,
+      { ...fetchOptions, method: 'POST', body: data }
+    )
+    return mapToAppHousePlan(response.house_plan)
+  }
+
+  async function updateVendorHousePlan(
+    vendorId: string,
+    planId: string,
+    data: UpdateVendorHousePlanPayload
+  ): Promise<AppHousePlan> {
+    const response = await $fetch<{ house_plan: any }>(
+      `${baseUrl}/store/vendors/${vendorId}/house-plans/${planId}`,
       { ...fetchOptions, method: 'POST', body: data }
     )
     return mapToAppHousePlan(response.house_plan)
@@ -157,6 +193,7 @@ export function useVendorService() {
     getVendorHousePlans,
     getVendorOrders,
     createVendorHousePlan,
+    updateVendorHousePlan,
     deleteVendorHousePlan,
     listVendorPlanFamilies,
     createVendorPlanFamily,

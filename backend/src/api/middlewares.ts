@@ -6,7 +6,10 @@ import { z } from "@medusajs/framework/zod"
 import multer from "multer"
 import { CreateHousePlanSchema, UpdateHousePlanSchema } from "./admin/house-plans/validators"
 import { CreateVendorSchema, UpdateVendorSchema } from "./admin/vendors/validators"
-import { CreateVendorHousePlanSchema } from "./store/vendors/[id]/house-plans/validators"
+import {
+  CreateVendorHousePlanSchema,
+  UpdateVendorHousePlanSchema,
+} from "./store/vendors/[id]/house-plans/validators"
 import {
   CreateGalleryImageSchema,
   UpdateGalleryImageSchema,
@@ -46,6 +49,11 @@ export default defineMiddlewares({
       matcher: "/store/vendors/:id/house-plans",
       method: "POST",
       middlewares: [validateAndTransformBody(CreateVendorHousePlanSchema)],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId",
+      method: "POST",
+      middlewares: [validateAndTransformBody(UpdateVendorHousePlanSchema)],
     },
     {
       matcher: "/admin/house-plans",

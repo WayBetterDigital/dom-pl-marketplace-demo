@@ -29,3 +29,5 @@ export const CreateVendorHousePlanSchema = z.object({
 })
 
 export type CreateVendorHousePlanSchema = z.infer<typeof CreateVendorHousePlanSchema>
+export const UpdateVendorHousePlanSchema = CreateVendorHousePlanSchema.partial()
+export type UpdateVendorHousePlanSchema = z.infer<typeof UpdateVendorHousePlanSchema>
