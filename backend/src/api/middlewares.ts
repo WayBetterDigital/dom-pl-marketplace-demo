@@ -70,6 +70,7 @@ export default defineMiddlewares({
     {
       matcher: "/store/vendors/:id/house-plans/:planId/gallery",
       method: "POST",
+      bodyParser: { sizeLimit: "30mb" },
       middlewares: [validateAndTransformBody(CreateGalleryImageSchema)],
     },
     {
