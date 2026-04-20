@@ -26,6 +26,7 @@ async function handleSubmit() {
   loading.value = true
   try {
     await register(email.value, password.value, firstName.value, lastName.value)
+    console.log("Udane")
     await navigateTo('/konto/klient')
   } catch {
     errorMsg.value = 'Nie udało się utworzyć konta. Sprawdź czy podany e-mail nie jest już zajęty.'

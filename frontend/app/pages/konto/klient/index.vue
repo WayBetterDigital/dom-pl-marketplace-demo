@@ -3,6 +3,8 @@ import type { TableColumn } from '@nuxt/ui'
 import { useCustomerService } from '~/composables/services/useCustomerService'
 import type { AppOrder } from '~/types/order'
 
+definePageMeta({ middleware: 'auth' })
+
 type OrderRow = {
   id: string
   orderId: string

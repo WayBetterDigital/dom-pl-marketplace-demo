@@ -2,6 +2,8 @@
 import { useCustomerService } from '~/composables/services/useCustomerService'
 import type { AppOrder } from '~/types/order'
 
+definePageMeta({ middleware: 'auth' })
+
 const route = useRoute()
 const orderId = route.params.id as string
 const customerId = route.query.customerId as string
