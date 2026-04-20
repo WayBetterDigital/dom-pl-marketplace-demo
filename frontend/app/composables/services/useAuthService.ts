@@ -16,10 +16,13 @@ export function useAuthService() {
   }
 
   async function register(email: string, password: string, firstName: string, lastName: string): Promise<void> {
-    await sdk.auth.register('customer', 'emailpass', { email, password })
-    await sdk.store.customer.create({ email, first_name: firstName, last_name: lastName })
-    const { customer: raw } = await sdk.store.customer.retrieve()
-    customer.value = mapToAppCustomer(raw as any)
+    const token = await sdk.auth.register('customer', 'emailpass', { email, password })
+    await sdk.store.customer.create(
+      { email, first_name: firstName, last_name: lastName },
+      {},
+      { Authorization: `Bearer ${token}` }
+    )
+    await login(email, password)
   }
 
   async function logout(): Promise<void> {
