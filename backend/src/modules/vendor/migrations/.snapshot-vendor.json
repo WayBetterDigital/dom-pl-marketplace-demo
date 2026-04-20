@@ -51,6 +51,15 @@
           "nullable": false,
           "mappedType": "text"
         },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "revenue": {
           "name": "revenue",
           "type": "numeric",

@@ -6,6 +6,7 @@ const Vendor = model.define("vendor", {
   first_name: model.text(),
   last_name: model.text(),
   email: model.text(),
+  password_hash: model.text().nullable(),
   revenue: model.bigNumber().default(0),
   average_rating: model.number().nullable(),
 })

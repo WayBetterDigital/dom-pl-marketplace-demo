@@ -14,6 +14,7 @@ import {
   CreateGalleryImageSchema,
   UpdateGalleryImageSchema,
 } from "./store/vendors/[id]/house-plans/[planId]/gallery/validators"
+import { VendorLoginSchema } from "./store/vendors/login/validators"
 
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -64,6 +65,11 @@ export default defineMiddlewares({
       matcher: "/admin/house-plans/:id",
       method: "POST",
       middlewares: [validateAndTransformBody(UpdateHousePlanSchema)],
+    },
+    {
+      matcher: "/store/vendors/login",
+      method: "POST",
+      middlewares: [validateAndTransformBody(VendorLoginSchema)],
     },
     {
       matcher: "/admin/vendors",

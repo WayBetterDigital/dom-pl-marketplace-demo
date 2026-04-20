@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'vendor-auth' })
 import { useVendorService } from '~/composables/services/useVendorService'
 import type { AppOrder } from '~/types/order'
 
