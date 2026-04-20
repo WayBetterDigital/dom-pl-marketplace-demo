@@ -32,7 +32,7 @@ async function handleSubmit() {
   <UContainer class="flex flex-1 items-center justify-center py-16">
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-default">
+        <h1 class="text-2xl font-bold text-default cursor-pointer">
           Zaloguj się
         </h1>
         <p class="mt-1 text-sm text-muted">
@@ -82,6 +82,7 @@ async function handleSubmit() {
           <UButton
             type="submit"
             block
+            class="cursor-pointer"
             :loading="loading"
           >
             Zaloguj się

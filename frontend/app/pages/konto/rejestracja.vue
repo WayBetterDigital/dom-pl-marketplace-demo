@@ -116,6 +116,7 @@ async function handleSubmit() {
           <UButton
             type="submit"
             block
+            class="cursor-pointer"
             :loading="loading"
           >
             Zarejestruj się
@@ -127,7 +128,7 @@ async function handleSubmit() {
         Masz już konto?
         <NuxtLink
           to="/konto/logowanie"
-          class="font-medium text-primary hover:underline"
+          class="font-medium text-primary hover:underline cursor-pointer"
         >
           Zaloguj się
         </NuxtLink>
