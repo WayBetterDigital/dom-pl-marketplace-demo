@@ -35,6 +35,17 @@ docker compose run --rm medusa yarn medusa user -e admin@admin.com -p admin
 - Medusa admin: http://localhost:9000/app
 - pgAdmin: http://localhost:8080 — login: `admin@admin.com` / `admin`
 
+### Frontend users
+Customer account:
+- Anna Nowak
+- anowak@gmail.com
+- ZAQ!2wsx
+
+Vendor account:
+- Jan Kowalski
+- jkowalski@gmail.com
+- ZAQ!2wsx
+
 ### Frontend
 
 ```bash

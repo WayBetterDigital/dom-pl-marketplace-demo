@@ -4,6 +4,7 @@ import {
   Modules,
 } from "@medusajs/framework/utils";
 import seedHousePlans from "./seed-house-plans";
+import seedDemoUsers from "./seed-demo-users";
 import {
   createWorkflow,
   transform,
@@ -405,6 +406,8 @@ export default async function seedDemoData({ container }: ExecArgs) {
   logger.info("Finished seeding inventory levels data.");
 
   await seedHousePlans({ container, args: [] });
+
+  await seedDemoUsers({ container, args: [] });
 
   logger.info("All seed data complete.");
 }
