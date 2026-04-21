@@ -57,7 +57,7 @@ export function useVendorAuthService() {
     if (!token) return null
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
+      const payload = JSON.parse(atob(token.split('.')[1]!))
       if (payload.exp * 1000 < Date.now()) {
         logout()
         return null
@@ -65,9 +65,9 @@ export function useVendorAuthService() {
       vendor.value = {
         id: payload.vendor_id,
         email: payload.email,
-        first_name: '',
-        last_name: '',
-        company_name: '',
+        first_name: payload.first_name ?? '',
+        last_name: payload.last_name ?? '',
+        company_name: payload.company_name ?? '',
       }
       return vendor.value
     } catch {

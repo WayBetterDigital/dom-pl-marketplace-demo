@@ -45,7 +45,14 @@ export function verifyPassword(password: string, stored: string): boolean {
 export function signVendorToken(vendor: VendorAuthResponse): string {
   const secret = process.env.JWT_SECRET || "supersecret"
   return jwt.sign(
-    { vendor_id: vendor.id, email: vendor.email, type: "vendor" },
+    {
+      vendor_id: vendor.id,
+      email: vendor.email,
+      first_name: vendor.first_name,
+      last_name: vendor.last_name,
+      company_name: vendor.company_name,
+      type: "vendor",
+    },
     secret,
     { expiresIn: "7d" }
   )
