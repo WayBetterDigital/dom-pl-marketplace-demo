@@ -5,6 +5,6 @@ export default defineNuxtRouteMiddleware(async () => {
   const customer = await getSession()
 
   if (!customer) {
-    return navigateTo('/konto/logowanie')
+    return navigateTo('/konto/logowanie-klient')
   }
 })

@@ -1,104 +1,94 @@
-<script setup lang="ts">
-import { useAuthService } from '~/composables/services/useAuthService'
-
-const { login } = useAuthService()
-
-const email = ref('')
-const password = ref('')
-const loading = ref(false)
-const errorMsg = ref('')
-
-async function handleSubmit() {
-  errorMsg.value = ''
-
-  if (!email.value || !password.value) {
-    errorMsg.value = 'Wypełnij wszystkie pola.'
-    return
-  }
-
-  loading.value = true
-  try {
-    await login(email.value, password.value)
-    await navigateTo('/konto/klient')
-  } catch {
-    errorMsg.value = 'Nieprawidłowy e-mail lub hasło.'
-  } finally {
-    loading.value = false
-  }
-}
-</script>
-
 <template>
   <UContainer class="flex flex-1 items-center justify-center py-16">
-    <div class="w-full max-w-sm space-y-6">
+    <div class="w-full max-w-lg space-y-8">
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-default cursor-pointer">
-          Zaloguj się
+        <h1 class="text-2xl font-bold text-default">
+          Witaj w serwisie
         </h1>
         <p class="mt-1 text-sm text-muted">
-          Wprowadź swoje dane, aby uzyskać dostęp do konta
+          Wybierz, jako kogo chcesz się zalogować lub zarejestrować
         </p>
       </div>
 
-      <UCard>
-        <form
-          class="space-y-4"
-          @submit.prevent="handleSubmit"
-        >
-          <UFormField
-            label="E-mail"
-            name="email"
-          >
-            <UInput
-              v-model="email"
-              type="email"
-              placeholder="jan@example.com"
-              autocomplete="email"
-              class="w-full"
-            />
-          </UFormField>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 items-stretch">
+        <!-- Klient -->
+        <UCard>
+          <div class="flex flex-col h-full gap-4">
+            <div class="flex items-center gap-3 min-h-14">
+              <div class="rounded-lg bg-primary/10 p-2.5">
+                <UIcon
+                  name="i-lucide-user"
+                  class="size-6 text-primary"
+                />
+              </div>
+              <div>
+                <p class="font-semibold text-default">
+                  Klient
+                </p>
+                <p class="text-xs text-muted">
+                  Przeglądaj i kupuj projekty
+                </p>
+              </div>
+            </div>
 
-          <UFormField
-            label="Hasło"
-            name="password"
-          >
-            <UInput
-              v-model="password"
-              type="password"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              class="w-full"
-            />
-          </UFormField>
+            <div class="space-y-2 mt-auto">
+              <UButton
+                to="/konto/logowanie-klient"
+                block
+                variant="solid"
+              >
+                Zaloguj się
+              </UButton>
+              <UButton
+                to="/konto/rejestracja-klient"
+                block
+                variant="outline"
+              >
+                Zarejestruj się
+              </UButton>
+            </div>
+          </div>
+        </UCard>
 
-          <UAlert
-            v-if="errorMsg"
-            color="error"
-            variant="soft"
-            :description="errorMsg"
-            icon="i-lucide-circle-alert"
-          />
+        <!-- Sprzedawca -->
+        <UCard>
+          <div class="flex flex-col h-full gap-4">
+            <div class="flex items-center gap-3 min-h-14">
+              <div class="rounded-lg bg-primary/10 p-2.5">
+                <UIcon
+                  name="i-lucide-store"
+                  class="size-6 text-primary"
+                />
+              </div>
+              <div>
+                <p class="font-semibold text-default">
+                  Sprzedawca
+                </p>
+                <p class="text-xs text-muted">
+                  Zarządzaj swoimi projektami
+                </p>
+              </div>
+            </div>
 
-          <UButton
-            type="submit"
-            block
-            class="cursor-pointer"
-            :loading="loading"
-          >
-            Zaloguj się
-          </UButton>
-        </form>
-      </UCard>
-
-      <p class="text-center text-sm text-muted">
-        Nie masz konta?
-        <NuxtLink
-          to="/konto/rejestracja"
-          class="font-medium text-primary hover:underline"
-        >
-          Zarejestruj się
-        </NuxtLink>
-      </p>
+            <div class="space-y-2 mt-auto">
+              <UButton
+                to="/konto/logowanie-sprzedawca"
+                block
+                variant="solid"
+              >
+                Zaloguj się
+              </UButton>
+              <UButton
+                to="/konto/rejestracja-sprzedawca"
+                block
+                variant="outline"
+              >
+                Zarejestruj się
+              </UButton>
+            </div>
+          </div>
+        </UCard>
+      </div>
     </div>
   </UContainer>
 </template>

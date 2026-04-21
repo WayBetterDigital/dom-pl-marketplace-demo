@@ -14,6 +14,21 @@ export function useVendorAuthService() {
   const sdk = useMedusaClient()
   const vendor = useState<AppVendorSession | null>('auth:vendor', () => null)
 
+  async function register(
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    companyName: string,
+  ): Promise<void> {
+    const response = await sdk.client.fetch<{ vendor: AppVendorSession; token: string }>(
+      '/store/vendors/register',
+      { method: 'POST', body: { email, password, first_name: firstName, last_name: lastName, company_name: companyName } }
+    )
+    localStorage.setItem(VENDOR_TOKEN_KEY, response.token)
+    vendor.value = response.vendor
+  }
+
   async function login(email: string, password: string): Promise<void> {
     const response = await sdk.client.fetch<{ vendor: AppVendorSession; token: string }>(
       '/store/vendors/login',
@@ -55,5 +70,5 @@ export function useVendorAuthService() {
     }
   }
 
-  return { vendor, login, logout, restoreSession }
+  return { vendor, login, register, logout, restoreSession }
 }

@@ -9,5 +9,6 @@ export default defineNuxtRouteMiddleware(() => {
 
   if (!vendor.value) {
     return navigateTo('/konto/logowanie-sprzedawca')
+
   }
 })

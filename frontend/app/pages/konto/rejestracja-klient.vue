@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { useVendorAuthService } from '~/composables/services/useVendorAuthService'
+import { useAuthService } from '~/composables/services/useAuthService'
 
-const { login } = useVendorAuthService()
+const { register } = useAuthService()
 
+const firstName = ref('')
+const lastName = ref('')
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -11,17 +13,23 @@ const errorMsg = ref('')
 async function handleSubmit() {
   errorMsg.value = ''
 
-  if (!email.value || !password.value) {
+  if (!firstName.value || !lastName.value || !email.value || !password.value) {
     errorMsg.value = 'Wypełnij wszystkie pola.'
+    return
+  }
+
+  if (password.value.length < 8) {
+    errorMsg.value = 'Hasło musi mieć co najmniej 8 znaków.'
     return
   }
 
   loading.value = true
   try {
-    await login(email.value, password.value)
-    await navigateTo('/konto/sprzedawca')
+    await register(email.value, password.value, firstName.value, lastName.value)
+    console.log("Udane")
+    await navigateTo('/konto/klient')
   } catch {
-    errorMsg.value = 'Nieprawidłowy e-mail lub hasło.'
+    errorMsg.value = 'Nie udało się utworzyć konta. Sprawdź czy podany e-mail nie jest już zajęty.'
   } finally {
     loading.value = false
   }
@@ -33,10 +41,10 @@ async function handleSubmit() {
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center">
         <h1 class="text-2xl font-bold text-default">
-          Panel sprzedawcy
+          Utwórz konto
         </h1>
         <p class="mt-1 text-sm text-muted">
-          Zaloguj się, aby zarządzać swoimi projektami
+          Zarejestruj się, aby móc składać zamówienia
         </p>
       </div>
 
@@ -45,6 +53,32 @@ async function handleSubmit() {
           class="space-y-4"
           @submit.prevent="handleSubmit"
         >
+          <div class="grid grid-cols-2 gap-3">
+            <UFormField
+              label="Imię"
+              name="firstName"
+            >
+              <UInput
+                v-model="firstName"
+                placeholder="Jan"
+                autocomplete="given-name"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField
+              label="Nazwisko"
+              name="lastName"
+            >
+              <UInput
+                v-model="lastName"
+                placeholder="Kowalski"
+                autocomplete="family-name"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
           <UFormField
             label="E-mail"
             name="email"
@@ -65,8 +99,8 @@ async function handleSubmit() {
             <UInput
               v-model="password"
               type="password"
-              placeholder="••••••••"
-              autocomplete="current-password"
+              placeholder="Min. 8 znaków"
+              autocomplete="new-password"
               class="w-full"
             />
           </UFormField>
@@ -82,20 +116,21 @@ async function handleSubmit() {
           <UButton
             type="submit"
             block
+            class="cursor-pointer"
             :loading="loading"
           >
-            Zaloguj się
+            Zarejestruj się
           </UButton>
         </form>
       </UCard>
 
       <p class="text-center text-sm text-muted">
-        Nie masz konta?
+        Masz już konto?
         <NuxtLink
-          to="/konto/rejestracja-sprzedawca"
-          class="font-medium text-primary hover:underline"
+          to="/konto/logowanie-klient"
+          class="font-medium text-primary hover:underline cursor-pointer"
         >
-          Zarejestruj się
+          Zaloguj się
         </NuxtLink>
       </p>
     </div>

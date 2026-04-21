@@ -15,6 +15,7 @@ import {
   UpdateGalleryImageSchema,
 } from "./store/vendors/[id]/house-plans/[planId]/gallery/validators"
 import { VendorLoginSchema } from "./store/vendors/login/validators"
+import { VendorRegisterSchema } from "./store/vendors/register/validators"
 
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -70,6 +71,11 @@ export default defineMiddlewares({
       matcher: "/store/vendors/login",
       method: "POST",
       middlewares: [validateAndTransformBody(VendorLoginSchema)],
+    },
+    {
+      matcher: "/store/vendors/register",
+      method: "POST",
+      middlewares: [validateAndTransformBody(VendorRegisterSchema)],
     },
     {
       matcher: "/admin/vendors",
