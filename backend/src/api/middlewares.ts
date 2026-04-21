@@ -16,6 +16,7 @@ import {
 } from "./store/vendors/[id]/house-plans/[planId]/gallery/validators"
 import { VendorLoginSchema } from "./store/vendors/login/validators"
 import { VendorRegisterSchema } from "./store/vendors/register/validators"
+import { requireVendorOwnership } from "./store/vendors/requireVendorOwnership"
 
 const upload = multer({ storage: multer.memoryStorage() })
 
@@ -50,12 +51,37 @@ export default defineMiddlewares({
     {
       matcher: "/store/vendors/:id/house-plans",
       method: "POST",
-      middlewares: [validateAndTransformBody(CreateVendorHousePlanSchema)],
+      middlewares: [requireVendorOwnership, validateAndTransformBody(CreateVendorHousePlanSchema)],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans",
+      method: "DELETE",
+      middlewares: [requireVendorOwnership],
     },
     {
       matcher: "/store/vendors/:id/house-plans/:planId",
       method: "POST",
-      middlewares: [validateAndTransformBody(UpdateVendorHousePlanSchema)],
+      middlewares: [requireVendorOwnership, validateAndTransformBody(UpdateVendorHousePlanSchema)],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId",
+      method: "DELETE",
+      middlewares: [requireVendorOwnership],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId/images",
+      method: "POST",
+      middlewares: [requireVendorOwnership],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId/images",
+      method: "DELETE",
+      middlewares: [requireVendorOwnership],
+    },
+    {
+      matcher: "/store/vendors/:id/plan-families",
+      method: "POST",
+      middlewares: [requireVendorOwnership],
     },
     {
       matcher: "/admin/house-plans",
@@ -91,12 +117,17 @@ export default defineMiddlewares({
       matcher: "/store/vendors/:id/house-plans/:planId/gallery",
       method: "POST",
       bodyParser: { sizeLimit: "30mb" },
-      middlewares: [validateAndTransformBody(CreateGalleryImageSchema)],
+      middlewares: [requireVendorOwnership, validateAndTransformBody(CreateGalleryImageSchema)],
     },
     {
       matcher: "/store/vendors/:id/house-plans/:planId/gallery/:imageId",
       method: "POST",
-      middlewares: [validateAndTransformBody(UpdateGalleryImageSchema)],
+      middlewares: [requireVendorOwnership, validateAndTransformBody(UpdateGalleryImageSchema)],
+    },
+    {
+      matcher: "/store/vendors/:id/house-plans/:planId/gallery/:imageId",
+      method: "DELETE",
+      middlewares: [requireVendorOwnership],
     },
     // Multipart file uploads — disable JSON body parser, use multer
     {
