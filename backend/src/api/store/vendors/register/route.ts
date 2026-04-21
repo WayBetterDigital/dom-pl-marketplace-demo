@@ -16,13 +16,13 @@ export async function POST(
 
   const vendorService: VendorModuleService = req.scope.resolve(VENDOR_MODULE)
 
-  const [existingEmail] = await vendorService.listVendors({ email })
-  if (existingEmail) {
-    return res.status(409).json({ message: "Konto z tym adresem e-mail już istnieje" })
-  }
-
-  const [existingCompany] = await vendorService.listVendors({ company_name })
-  if (existingCompany) {
+  const [existing] = await vendorService.listVendors({
+    $or: [{ email }, { company_name }],
+  } as any)
+  if (existing) {
+    if (existing.email === email) {
+      return res.status(409).json({ message: "Konto z tym adresem e-mail już istnieje" })
+    }
     return res.status(409).json({ message: "Firma o tej nazwie jest już zarejestrowana" })
   }
 
