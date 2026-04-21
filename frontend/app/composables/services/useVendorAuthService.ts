@@ -1,6 +1,6 @@
 import { useMedusaClient } from '#imports'
 
-const VENDOR_TOKEN_KEY = 'vendor_auth_token'
+export const VENDOR_TOKEN_KEY = 'vendor_auth_token'
 
 export type AppVendorSession = {
   id: string

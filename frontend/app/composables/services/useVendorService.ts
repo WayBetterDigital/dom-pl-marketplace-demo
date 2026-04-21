@@ -1,4 +1,5 @@
 import { useMedusaClient, useRuntimeConfig } from '#imports'
+import { VENDOR_TOKEN_KEY } from '~/composables/services/useVendorAuthService'
 import { mapToAppVendor } from '~/utils/mappers/vendorMapper'
 import { mapToAppHousePlan } from '~/utils/mappers/housePlanMapper'
 import type { AppVendor, VendorApiResponse } from '~/types/vendor'
@@ -51,7 +52,7 @@ export function useVendorService() {
   }
 
   function authFetchOptions() {
-    const token = import.meta.client ? localStorage.getItem('vendor_auth_token') : null
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
     return {
       headers: {
         'x-publishable-api-key': config.public.medusa.publishableKey as string,
@@ -179,7 +180,7 @@ export function useVendorService() {
     files: File[]
   ): Promise<{ images: { url: string }[]; thumbnail: string | null }> {
     const fileData = await Promise.all(files.map(readFileAsBase64))
-    const token = import.meta.client ? localStorage.getItem('vendor_auth_token') : null
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
     const response = await sdk.client.fetch<{ images: { url: string }[]; thumbnail: string | null }>(
       `/store/vendors/${vendorId}/house-plans/${planId}/images`,
       {
@@ -196,7 +197,7 @@ export function useVendorService() {
     planId: string,
     imageUrl: string
   ): Promise<void> {
-    const token = import.meta.client ? localStorage.getItem('vendor_auth_token') : null
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
     await sdk.client.fetch(
       `/store/vendors/${vendorId}/house-plans/${planId}/images`,
       {
