@@ -83,6 +83,7 @@ async function handleSubmit() {
             type="submit"
             block
             :loading="loading"
+            class="cursor-pointer"
           >
             Zaloguj się
           </UButton>
