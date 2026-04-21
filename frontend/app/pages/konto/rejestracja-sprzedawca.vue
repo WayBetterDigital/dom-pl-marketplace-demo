@@ -28,8 +28,8 @@ async function handleSubmit() {
   try {
     await register(email.value, password.value, firstName.value, lastName.value, companyName.value)
     await navigateTo('/konto/sprzedawca')
-  } catch {
-    errorMsg.value = 'Nie udało się utworzyć konta. Sprawdź czy podany e-mail nie jest już zajęty.'
+  } catch (err: any) {
+    errorMsg.value = err?.message || 'Nie udało się utworzyć konta. Spróbuj ponownie.'
   } finally {
     loading.value = false
   }

@@ -1,5 +1,4 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { MedusaError } from "@medusajs/framework/utils"
 import { VENDOR_MODULE } from "../../../../modules/vendor"
 import VendorModuleService from "../../../../modules/vendor/service"
 import {
@@ -17,9 +16,14 @@ export async function POST(
 
   const vendorService: VendorModuleService = req.scope.resolve(VENDOR_MODULE)
 
-  const [existing] = await vendorService.listVendors({ email })
-  if (existing) {
-    throw new MedusaError(MedusaError.Types.CONFLICT, "Konto z tym adresem e-mail już istnieje")
+  const [existingEmail] = await vendorService.listVendors({ email })
+  if (existingEmail) {
+    return res.status(409).json({ message: "Konto z tym adresem e-mail już istnieje" })
+  }
+
+  const [existingCompany] = await vendorService.listVendors({ company_name })
+  if (existingCompany) {
+    return res.status(409).json({ message: "Firma o tej nazwie jest już zarejestrowana" })
   }
 
   const vendor = await vendorService.createVendors({

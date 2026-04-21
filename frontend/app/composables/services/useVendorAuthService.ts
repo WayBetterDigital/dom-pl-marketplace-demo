@@ -21,10 +21,16 @@ export function useVendorAuthService() {
     lastName: string,
     companyName: string,
   ): Promise<void> {
-    const response = await sdk.client.fetch<{ vendor: AppVendorSession; token: string }>(
-      '/store/vendors/register',
-      { method: 'POST', body: { email, password, first_name: firstName, last_name: lastName, company_name: companyName } }
-    )
+    let response: { vendor: AppVendorSession; token: string }
+    try {
+      response = await sdk.client.fetch<{ vendor: AppVendorSession; token: string }>(
+        '/store/vendors/register',
+        { method: 'POST', body: { email, password, first_name: firstName, last_name: lastName, company_name: companyName } }
+      )
+    } catch (err: any) {
+      const msg = err?.body?.message || err?.message || 'Nie udało się utworzyć konta'
+      throw new Error(msg)
+    }
     localStorage.setItem(VENDOR_TOKEN_KEY, response.token)
     vendor.value = response.vendor
   }
