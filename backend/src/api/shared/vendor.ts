@@ -43,7 +43,8 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 export function signVendorToken(vendor: VendorAuthResponse): string {
-  const secret = process.env.JWT_SECRET || "supersecret"
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error("JWT_SECRET environment variable is not set")
   return jwt.sign(
     {
       vendor_id: vendor.id,
