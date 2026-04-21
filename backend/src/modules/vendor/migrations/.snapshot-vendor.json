@@ -135,6 +135,15 @@
           "expression": "CREATE UNIQUE INDEX IF NOT EXISTS \"IDX_vendor_company_name_unique\" ON \"vendor\" (\"company_name\") WHERE deleted_at IS NULL"
         },
         {
+          "keyName": "IDX_vendor_email_unique",
+          "columnNames": [],
+          "composite": false,
+          "constraint": false,
+          "primary": false,
+          "unique": false,
+          "expression": "CREATE UNIQUE INDEX IF NOT EXISTS \"IDX_vendor_email_unique\" ON \"vendor\" (\"email\") WHERE deleted_at IS NULL"
+        },
+        {
           "keyName": "IDX_vendor_deleted_at",
           "columnNames": [],
           "composite": false,
