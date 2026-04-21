@@ -2,6 +2,7 @@
 definePageMeta({ middleware: 'vendor-auth' })
 import type { TableColumn } from '@nuxt/ui'
 import { useVendorService } from '~/composables/services/useVendorService'
+import { useVendorAuthService } from '~/composables/services/useVendorAuthService'
 import type { AppOrder } from '~/types/order'
 
 type OrderRow = {
@@ -17,6 +18,12 @@ type OrderRow = {
 const route = useRoute()
 const toast = useToast()
 const vendorId = route.query.id as string
+const { logout } = useVendorAuthService()
+
+async function handleLogout() {
+  logout()
+  await navigateTo('/konto/logowanie')
+}
 const {
   getVendor,
   getVendorHousePlans,
@@ -194,19 +201,22 @@ const statusColor = (status: string) => {
         </div>
         <div class="flex gap-2">
           <UButton
-            variant="outline"
-            icon="i-lucide-settings"
-            size="sm"
-          >
-            Ustawienia
-          </UButton>
-          <UButton
             icon="i-lucide-plus"
             size="sm"
             class="cursor-pointer"
             :to="`/konto/sprzedawca/plan/nowy?vendorId=${vendorId}`"
           >
             Dodaj plan
+          </UButton>
+          <UButton
+            variant="outline"
+            color="neutral"
+            icon="i-lucide-log-out"
+            size="sm"
+            class="cursor-pointer"
+            @click="handleLogout"
+          >
+            Wyloguj się
           </UButton>
         </div>
       </div>

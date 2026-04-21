@@ -15,8 +15,13 @@ type OrderRow = {
   amount: string
 }
 
-const { customer } = useAuthService()
+const { customer, logout } = useAuthService()
 const { getCustomerOrders } = useCustomerService()
+
+async function handleLogout() {
+  await logout()
+  await navigateTo('/konto/logowanie')
+}
 
 const { data: ordersData, pending: ordersPending } = useAsyncData(
   'my-orders',
@@ -121,17 +126,22 @@ const statusColor = (status: string) => {
       <div class="flex gap-2">
         <UButton
           variant="outline"
-          icon="i-lucide-settings"
-          size="sm"
-        >
-          Ustawienia konta
-        </UButton>
-        <UButton
           icon="i-lucide-layout-template"
           size="sm"
+          class="cursor-pointer"
           to="/produkty"
         >
           Przeglądaj plany
+        </UButton>
+        <UButton
+          variant="outline"
+          color="neutral"
+          icon="i-lucide-log-out"
+          size="sm"
+          class="cursor-pointer"
+          @click="handleLogout"
+        >
+          Wyloguj się
         </UButton>
       </div>
     </div>
