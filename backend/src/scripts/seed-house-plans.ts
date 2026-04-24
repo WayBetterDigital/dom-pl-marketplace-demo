@@ -2,8 +2,6 @@ import { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
 import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
 import { HOUSE_PLAN_MODULE } from "../modules/house_plan"
-import { VENDOR_MODULE } from "../modules/vendor"
-import VendorModuleService from "../modules/vendor/service"
 import { GALLERY_MODULE } from "../modules/gallery"
 import type GalleryModuleService from "../modules/gallery/service"
 
@@ -204,11 +202,6 @@ const PLANS = [
     terrace: true,
     house_type: "jednorodzinny",
   },
-]
-
-const FAMILY_PLAN_TITLES = [
-  "Dom Willowy 160 – Wersja Klasyczna",
-  "Dom Willowy 160 – Wersja Nowoczesna",
 ]
 
 // Zdjęcia się z https://www.extradom.pl/ bo archon blokuje linki zdjęć :/
@@ -424,69 +417,6 @@ export default async function seedHousePlans({ container }: ExecArgs) {
 
 
   logger.info('Finished linking house plans to Medusa products.')
-
-  // Link house plans to vendors
-  const vendorService: VendorModuleService = container.resolve(VENDOR_MODULE)
-  const vendors = await vendorService.listVendors()
-
-  if (vendors.length >= 2) {
-    logger.info('Linking house plans to vendors...')
-    const half = Math.ceil(allPlans.length / 2)
-    for (const plan of allPlans.slice(0, half)) {
-      try {
-        await link.create({
-          [VENDOR_MODULE]: { vendor_id: vendors[0].id },
-          [HOUSE_PLAN_MODULE]: { house_plan_id: plan.id },
-        })
-      } catch {
-        logger.info(`Vendor link for "${plan.title}" already exists, skipping.`)
-      }
-    }
-    for (const plan of allPlans.slice(half)) {
-      try {
-        await link.create({
-          [VENDOR_MODULE]: { vendor_id: vendors[1].id },
-          [HOUSE_PLAN_MODULE]: { house_plan_id: plan.id },
-        })
-      } catch {
-        logger.info(`Vendor link for "${plan.title}" already exists, skipping.`)
-      }
-    }
-    logger.info('House plans linked to vendors successpełnay.')
-  }
-
-  // Create plan family "Dom Willowy 160" for Projekty Malinowski and assign the two variant plans
-  logger.info('Setting up plan family for Projekty Malinowski...')
-  const vendorService2: VendorModuleService = container.resolve(VENDOR_MODULE)
-  const allVendors = await vendorService2.listVendors()
-  const malinowski = allVendors.find((v: any) => v.company_name === 'Projekty Malinowski')
-
-  if (malinowski) {
-    const existingFamilies = await housePlanService.listPlanFamilies({
-      vendor_id: malinowski.id,
-      name: 'Dom Willowy 160',
-    })
-
-    let family = existingFamilies[0]
-    if (!family) {
-      family = await housePlanService.createPlanFamilies({
-        name: 'Dom Willowy 160',
-        vendor_id: malinowski.id,
-      })
-      logger.info(`Created plan family "Dom Willowy 160" for ${malinowski.company_name}`)
-    } else {
-      logger.info(`Plan family "Dom Willowy 160" already exists, skipping creation.`)
-    }
-
-    const variantPlans = allPlans.filter((p: any) => FAMILY_PLAN_TITLES.includes(p.title))
-    for (const plan of variantPlans) {
-      if ((plan as any).family_id === family.id) continue
-      await housePlanService.updateHousePlans({ id: plan.id, family_id: family.id })
-      logger.info(`Assigned "${plan.title}" to family "${family.name}"`)
-    }
-  } else {
-    logger.info('Vendor "Projekty Malinowski" not found, skipping family setup.')
-  }
 
   // Seed gallery images
   logger.info('Seeding gallery images...')

@@ -1,6 +1,18 @@
 <script setup lang="ts">
+import { useAuthService } from '~/composables/services/useAuthService'
+import { useVendorAuthService } from '~/composables/services/useVendorAuthService'
+
 const searchQuery = ref('')
 const isSearchOpen = ref(false)
+
+const { customer } = useAuthService()
+const { vendor } = useVendorAuthService()
+
+const profileLink = computed(() => {
+  if (vendor.value) return '/konto/sprzedawca'
+  if (customer.value) return '/konto/klient'
+  return '/konto/logowanie'
+})
 
 const cart = useState<any>('cart')
 const cartCount = computed(() =>
@@ -39,7 +51,7 @@ const cartCount = computed(() =>
         /> -->
 
         <UButton
-          to="/konto"
+          :to="profileLink"
           icon="i-lucide-circle-user"
           variant="ghost"
           color="neutral"

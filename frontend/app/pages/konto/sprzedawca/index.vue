@@ -1,6 +1,8 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'vendor-auth' })
 import type { TableColumn } from '@nuxt/ui'
 import { useVendorService } from '~/composables/services/useVendorService'
+import { useVendorAuthService } from '~/composables/services/useVendorAuthService'
 import type { AppOrder } from '~/types/order'
 
 type OrderRow = {
@@ -15,7 +17,13 @@ type OrderRow = {
 
 const route = useRoute()
 const toast = useToast()
-const vendorId = route.query.id as string
+const { vendor: vendorSession, logout } = useVendorAuthService()
+const vendorId = computed(() => (route.query.id as string) || vendorSession.value?.id || '')
+
+async function handleLogout() {
+  logout()
+  await navigateTo('/konto/logowanie')
+}
 const {
   getVendor,
   getVendorHousePlans,
@@ -24,15 +32,15 @@ const {
 } = useVendorService()
 
 const { data: vendorData } = await useAsyncData(
-  `vendor-${route.query.id}`,
-  () => getVendor(route.query.id as string),
-  { server: false }
+  () => `vendor-${vendorId.value}`,
+  () => getVendor(vendorId.value),
+  { server: false, watch: [vendorId] }
 )
 
 const { data: ordersData, pending: ordersPending } = useAsyncData(
-  `vendor-orders-${route.query.id}`,
-  () => getVendorOrders(route.query.id as string),
-  { server: false }
+  () => `vendor-orders-${vendorId.value}`,
+  () => getVendorOrders(vendorId.value),
+  { server: false, watch: [vendorId] }
 )
 
 const vendor = computed(() => ({
@@ -120,9 +128,9 @@ const recentOrders = computed<OrderRow[]>(() =>
 )
 
 const { data: housePlansData } = await useAsyncData(
-  `vendor-house-plans-${route.query.id}`,
-  () => getVendorHousePlans(route.query.id as string),
-  { server: false }
+  () => `vendor-house-plans-${vendorId.value}`,
+  () => getVendorHousePlans(vendorId.value),
+  { server: false, watch: [vendorId] }
 )
 
 const myPlans = computed(() =>
@@ -136,11 +144,11 @@ const myPlans = computed(() =>
 async function deletePlan(planId: string) {
   if (!confirm('Czy na pewno chcesz usunąć ten plan?')) return
   try {
-    await deleteVendorHousePlan(vendorId, planId)
+    await deleteVendorHousePlan(vendorId.value, planId)
     toast.add({ title: 'Plan usunięty', color: 'success' })
     await Promise.all([
-      refreshNuxtData(`vendor-${vendorId}`),
-      refreshNuxtData(`vendor-house-plans-${vendorId}`)
+      refreshNuxtData(`vendor-${vendorId.value}`),
+      refreshNuxtData(`vendor-house-plans-${vendorId.value}`)
     ])
   } catch {
     toast.add({
@@ -193,19 +201,22 @@ const statusColor = (status: string) => {
         </div>
         <div class="flex gap-2">
           <UButton
-            variant="outline"
-            icon="i-lucide-settings"
-            size="sm"
-          >
-            Ustawienia
-          </UButton>
-          <UButton
             icon="i-lucide-plus"
             size="sm"
             class="cursor-pointer"
             :to="`/konto/sprzedawca/plan/nowy?vendorId=${vendorId}`"
           >
             Dodaj plan
+          </UButton>
+          <UButton
+            variant="outline"
+            color="neutral"
+            icon="i-lucide-log-out"
+            size="sm"
+            class="cursor-pointer"
+            @click="handleLogout"
+          >
+            Wyloguj się
           </UButton>
         </div>
       </div>
@@ -278,7 +289,7 @@ const statusColor = (status: string) => {
                     variant="ghost"
                     size="xs"
                     icon="i-lucide-eye"
-                    :to="`/konto/sprzedawca/zamowienie/${row.original.orderId}?vendorId=${route.query.id}`"
+                    :to="`/konto/sprzedawca/zamowienie/${row.original.orderId}?vendorId=${vendorId}`"
                   >
                     Szczegóły
                   </UButton>

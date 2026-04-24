@@ -1,25 +1,21 @@
 <script setup lang="ts">
 import { useCustomerService } from '~/composables/services/useCustomerService'
+import { useAuthService } from '~/composables/services/useAuthService'
 import type { AppOrder } from '~/types/order'
+
+definePageMeta({ middleware: 'auth' })
 
 const route = useRoute()
 const orderId = route.params.id as string
-const customerId = route.query.customerId as string
 
-const { getCustomerOrders, getCustomer } = useCustomerService()
+const { customer } = useAuthService()
+const { getCustomerOrders } = useCustomerService()
 
-const [{ data: orders, pending }, { data: customerData }] = await Promise.all([
-  useAsyncData(
-    `customer-orders-detail-${customerId}`,
-    () => getCustomerOrders(customerId),
-    { server: false }
-  ),
-  useAsyncData(
-    `customer-detail-${customerId}`,
-    () => getCustomer(customerId),
-    { server: false }
-  ),
-])
+const { data: orders, pending } = await useAsyncData(
+  'my-orders-detail',
+  () => getCustomerOrders(customer.value!.id),
+  { server: false }
+)
 
 const order = computed<AppOrder | undefined>(() =>
   (orders.value ?? []).find((o) => o.id === orderId)
@@ -36,7 +32,7 @@ const orderTotal = computed(() => {
 })
 
 const displayEmail = computed(() =>
-  order.value?.email || customerData.value?.email || '—'
+  order.value?.email || customer.value?.email || '—'
 )
 
 const statusLabel = (status: string) => {
@@ -57,7 +53,7 @@ const statusColor = (status: string) => {
   return 'neutral'
 }
 
-const backUrl = customerId ? `/konto/klient?id=${customerId}` : '/konto/klient'
+const backUrl = '/konto/klient'
 </script>
 
 <template>

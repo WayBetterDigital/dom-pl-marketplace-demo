@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'vendor-auth' })
 import { useRoute, useAsyncData, createError } from '#imports'
 import { useHousePlanService } from '~/composables/services/useHousePlanService'
 import {

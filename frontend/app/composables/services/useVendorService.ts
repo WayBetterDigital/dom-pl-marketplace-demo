@@ -1,4 +1,5 @@
 import { useMedusaClient, useRuntimeConfig } from '#imports'
+import { VENDOR_TOKEN_KEY } from '~/composables/services/useVendorAuthService'
 import { mapToAppVendor } from '~/utils/mappers/vendorMapper'
 import { mapToAppHousePlan } from '~/utils/mappers/housePlanMapper'
 import type { AppVendor, VendorApiResponse } from '~/types/vendor'
@@ -47,6 +48,16 @@ export function useVendorService() {
   const fetchOptions = {
     headers: {
       'x-publishable-api-key': config.public.medusa.publishableKey as string
+    }
+  }
+
+  function authFetchOptions() {
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
+    return {
+      headers: {
+        'x-publishable-api-key': config.public.medusa.publishableKey as string,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      }
     }
   }
 
@@ -106,7 +117,7 @@ export function useVendorService() {
 
   async function deleteVendorHousePlan(vendorId: string, planId: string): Promise<void> {
     await $fetch(`${baseUrl}/store/vendors/${vendorId}/house-plans/${planId}`, {
-      ...fetchOptions,
+      ...authFetchOptions(),
       method: 'DELETE'
     })
   }
@@ -117,7 +128,7 @@ export function useVendorService() {
   ): Promise<AppHousePlan> {
     const response = await $fetch<{ house_plan: any }>(
       `${baseUrl}/store/vendors/${vendorId}/house-plans`,
-      { ...fetchOptions, method: 'POST', body: data }
+      { ...authFetchOptions(), method: 'POST', body: data }
     )
     return mapToAppHousePlan(response.house_plan)
   }
@@ -129,7 +140,7 @@ export function useVendorService() {
   ): Promise<AppHousePlan> {
     const response = await $fetch<{ house_plan: any }>(
       `${baseUrl}/store/vendors/${vendorId}/house-plans/${planId}`,
-      { ...fetchOptions, method: 'POST', body: data }
+      { ...authFetchOptions(), method: 'POST', body: data }
     )
     return mapToAppHousePlan(response.house_plan)
   }
@@ -145,7 +156,7 @@ export function useVendorService() {
   async function createVendorPlanFamily(vendorId: string, name: string): Promise<{ id: string, name: string }> {
     const response = await $fetch<{ plan_family: { id: string, name: string } }>(
       `${baseUrl}/store/vendors/${vendorId}/plan-families`,
-      { ...fetchOptions, method: 'POST', body: { name } }
+      { ...authFetchOptions(), method: 'POST', body: { name } }
     )
     return response.plan_family
   }
@@ -169,9 +180,14 @@ export function useVendorService() {
     files: File[]
   ): Promise<{ images: { url: string }[]; thumbnail: string | null }> {
     const fileData = await Promise.all(files.map(readFileAsBase64))
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
     const response = await sdk.client.fetch<{ images: { url: string }[]; thumbnail: string | null }>(
       `/store/vendors/${vendorId}/house-plans/${planId}/images`,
-      { method: 'POST', body: { files: fileData } }
+      {
+        method: 'POST',
+        body: { files: fileData },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
     )
     return response
   }
@@ -181,9 +197,14 @@ export function useVendorService() {
     planId: string,
     imageUrl: string
   ): Promise<void> {
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
     await sdk.client.fetch(
       `/store/vendors/${vendorId}/house-plans/${planId}/images`,
-      { method: 'DELETE', body: { url: imageUrl } }
+      {
+        method: 'DELETE',
+        body: { url: imageUrl },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
     )
   }
 

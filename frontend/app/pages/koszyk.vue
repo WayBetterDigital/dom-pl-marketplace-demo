@@ -1,29 +1,15 @@
 <script setup lang="ts">
-import { useAsyncData, useRouter, ref, computed } from '#imports'
 import { useCartService } from '~/composables/services/useCartService'
-import { useCustomerService } from '~/composables/services/useCustomerService'
+import { useAuthService } from '~/composables/services/useAuthService'
 
 const cartService = useCartService()
-const customerService = useCustomerService()
+const { customer } = useAuthService()
 const router = useRouter()
 const toast = useToast()
 const isCheckingOut = ref(false)
 const removingItemId = ref<string | null>(null)
-const selectedCustomerId = ref<string | undefined>(undefined)
 
-const { data: cart, refresh, pending } = await useAsyncData('cart', () => cartService.getCart())
-const { data: customersData } = useAsyncData('checkout-customers', () => customerService.listCustomers())
-
-const customerOptions = computed(() =>
-  (customersData.value?.data ?? []).map(c => ({
-    label: `${c.first_name} ${c.last_name} (${c.email})`,
-    value: c.id
-  }))
-)
-
-const selectedCustomer = computed(() =>
-  customersData.value?.data.find(c => c.id === selectedCustomerId.value)
-)
+const { data: cart, refresh, pending } = await useAsyncData('cart', () => cartService.getCart(), { server: false })
 
 const handleRemove = async (lineItemId: string) => {
   removingItemId.value = lineItemId
@@ -46,15 +32,21 @@ const formatPrice = (price: number) => {
 }
 
 const handleCheckout = async () => {
-  if (!selectedCustomerId.value) {
-    toast.add({ title: 'Wybierz konto', description: 'Wybierz konto klienta przed złożeniem zamówienia.', color: 'warning' })
-    return
+  if (!customer.value) {
+    toast.add({
+      title: 'Wymagane logowanie',
+      description: 'Musisz być zalogowany, aby złożyć zamówienie.',
+      color: 'warning',
+      icon: 'i-lucide-log-in',
+    })
+    return router.push('/konto/logowanie-klient')
   }
+
   isCheckingOut.value = true
   try {
     await cartService.completeDummyCheckout(
-      selectedCustomer.value
-        ? { email: selectedCustomer.value.email, first_name: selectedCustomer.value.first_name, last_name: selectedCustomer.value.last_name }
+      customer.value
+        ? { email: customer.value.email, first_name: customer.value.first_name, last_name: customer.value.last_name }
         : undefined
     )
     toast.add({
@@ -62,7 +54,7 @@ const handleCheckout = async () => {
       description: 'Zamówienie zostało złożone pomyślnie!',
       color: 'success'
     })
-    router.push('/')
+    router.push('/konto/klient')
   } catch (error) {
     console.error('Checkout failed:', error)
     toast.add({
@@ -84,7 +76,7 @@ const handleCheckout = async () => {
       <UIcon name="i-lucide-loader-2" class="size-8 animate-spin text-primary" />
     </div>
 
-    <div v-else-if="!cart || !cart.items || cart.items.length === 0" class="text-center py-12 bg-[var(--ui-bg-elevated)] rounded-xl border border-[var(--ui-border)]">
+    <div v-else-if="!cart || !cart.items || cart.items.length === 0" class="text-center py-12 bg-elevated rounded-xl border border-default">
       <UIcon name="i-lucide-shopping-cart" class="size-16 text-muted mb-4 mx-auto" />
       <h2 class="text-xl font-semibold text-default mb-2">Twój koszyk jest pusty</h2>
       <p class="text-muted mb-6">Przejdź do projektów, aby znaleźć coś dla siebie.</p>
@@ -96,7 +88,7 @@ const handleCheckout = async () => {
     <div v-else class="space-y-8">
       <!-- Cart Items -->
       <UCard>
-        <ul class="divide-y divide-[var(--ui-border)]">
+        <ul class="divide-y divide-default">
           <li
             v-for="item in cart.items"
             :key="item.id"
@@ -106,7 +98,7 @@ const handleCheckout = async () => {
               :to="item.variant?.product?.house_plan?.id ? `/produkty/${item.variant.product.house_plan.id}` : undefined"
               class="flex items-center gap-4 group flex-1 min-w-0"
             >
-              <div class="size-20 shrink-0 bg-[var(--ui-bg-elevated)] rounded-lg flex items-center justify-center overflow-hidden border border-[var(--ui-border)]">
+              <div class="size-20 shrink-0 bg-elevated rounded-lg flex items-center justify-center overflow-hidden border border-default">
                 <NuxtImg
                   v-if="item.variant?.product?.thumbnail"
                   :src="item.variant.product.thumbnail"
@@ -122,10 +114,7 @@ const handleCheckout = async () => {
                   v-if="item.variant?.product?.house_plan?.id"
                   class="text-xs text-primary mt-0.5 flex items-center gap-1"
                 >
-                  <UIcon
-                    name="i-lucide-arrow-right"
-                    class="size-3"
-                  />
+                  <UIcon name="i-lucide-arrow-right" class="size-3" />
                   Zobacz projekt
                 </p>
               </div>
@@ -154,22 +143,10 @@ const handleCheckout = async () => {
           <span class="font-bold text-2xl">{{ formatPrice(cart.subtotal || 0) }}</span>
         </div>
 
-        <div class="w-full max-w-sm flex flex-col gap-2">
-          <label class="text-sm text-muted font-medium">Konto klienta (demo)</label>
-          <USelect
-            v-model="selectedCustomerId"
-            :items="customerOptions"
-            placeholder="Wybierz klienta..."
-            value-key="value"
-            label-key="label"
-          />
-        </div>
-
         <UButton
           size="xl"
           icon="i-lucide-check-circle"
           :loading="isCheckingOut"
-          :disabled="!selectedCustomerId"
           class="cursor-pointer"
           @click="handleCheckout"
         >

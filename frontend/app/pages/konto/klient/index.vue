@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import { useCustomerService } from '~/composables/services/useCustomerService'
+import { useAuthService } from '~/composables/services/useAuthService'
 import type { AppOrder } from '~/types/order'
+
+definePageMeta({ middleware: 'auth' })
 
 type OrderRow = {
   id: string
@@ -12,26 +15,25 @@ type OrderRow = {
   amount: string
 }
 
-const route = useRoute()
-const { getCustomer, getCustomerOrders } = useCustomerService()
+const { customer, logout } = useAuthService()
+const { getCustomerOrders } = useCustomerService()
 
-const { data: customerData } = await useAsyncData(
-  `customer-${route.query.id}`,
-  () => getCustomer(route.query.id as string),
-  { server: false }
-)
+async function handleLogout() {
+  await logout()
+  await navigateTo('/konto/logowanie')
+}
 
 const { data: ordersData, pending: ordersPending } = useAsyncData(
-  `customer-orders-${route.query.id}`,
-  () => getCustomerOrders(route.query.id as string),
+  'my-orders',
+  () => getCustomerOrders(customer.value!.id),
   { server: false }
 )
 
-const customer = computed(() => ({
-  name: customerData.value ? `${customerData.value.first_name} ${customerData.value.last_name}` : '—',
-  email: customerData.value?.email ?? '—',
-  since: customerData.value?.created_at
-    ? new Date(customerData.value.created_at).getFullYear().toString()
+const customerDisplay = computed(() => ({
+  name: customer.value ? `${customer.value.first_name} ${customer.value.last_name}` : '—',
+  email: customer.value?.email ?? '—',
+  since: customer.value?.created_at
+    ? new Date(customer.value.created_at).getFullYear().toString()
     : '—'
 }))
 
@@ -108,33 +110,38 @@ const statusColor = (status: string) => {
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-4">
         <UAvatar
-          :alt="customer.name"
+          :alt="customerDisplay.name"
           size="xl"
           icon="i-lucide-user"
         />
         <div>
           <h1 class="text-2xl font-bold text-default">
-            {{ customer.name }}
+            {{ customerDisplay.name }}
           </h1>
           <p class="text-sm text-muted">
-            {{ customer.email }} · Konto od {{ customer.since }}
+            {{ customerDisplay.email }} · Konto od {{ customerDisplay.since }}
           </p>
         </div>
       </div>
       <div class="flex gap-2">
         <UButton
           variant="outline"
-          icon="i-lucide-settings"
-          size="sm"
-        >
-          Ustawienia konta
-        </UButton>
-        <UButton
           icon="i-lucide-layout-template"
           size="sm"
+          class="cursor-pointer"
           to="/produkty"
         >
           Przeglądaj plany
+        </UButton>
+        <UButton
+          variant="outline"
+          color="neutral"
+          icon="i-lucide-log-out"
+          size="sm"
+          class="cursor-pointer"
+          @click="handleLogout"
+        >
+          Wyloguj się
         </UButton>
       </div>
     </div>
@@ -205,7 +212,7 @@ const statusColor = (status: string) => {
                 variant="ghost"
                 size="xs"
                 icon="i-lucide-eye"
-                :to="`/konto/klient/zamowienie/${row.original.orderId}?customerId=${route.query.id}`"
+                :to="`/konto/klient/zamowienie/${row.original.orderId}`"
               >
                 Szczegóły
               </UButton>
