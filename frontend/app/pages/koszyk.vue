@@ -2,8 +2,6 @@
 import { useCartService } from '~/composables/services/useCartService'
 import { useAuthService } from '~/composables/services/useAuthService'
 
-definePageMeta({ middleware: 'auth' })
-
 const cartService = useCartService()
 const { customer } = useAuthService()
 const router = useRouter()
@@ -34,6 +32,16 @@ const formatPrice = (price: number) => {
 }
 
 const handleCheckout = async () => {
+  if (!customer.value) {
+    toast.add({
+      title: 'Wymagane logowanie',
+      description: 'Musisz być zalogowany, aby złożyć zamówienie.',
+      color: 'warning',
+      icon: 'i-lucide-log-in',
+    })
+    return router.push('/konto/logowanie-klient')
+  }
+
   isCheckingOut.value = true
   try {
     await cartService.completeDummyCheckout(
@@ -68,7 +76,7 @@ const handleCheckout = async () => {
       <UIcon name="i-lucide-loader-2" class="size-8 animate-spin text-primary" />
     </div>
 
-    <div v-else-if="!cart || !cart.items || cart.items.length === 0" class="text-center py-12 bg-[var(--ui-bg-elevated)] rounded-xl border border-[var(--ui-border)]">
+    <div v-else-if="!cart || !cart.items || cart.items.length === 0" class="text-center py-12 bg-elevated rounded-xl border border-default">
       <UIcon name="i-lucide-shopping-cart" class="size-16 text-muted mb-4 mx-auto" />
       <h2 class="text-xl font-semibold text-default mb-2">Twój koszyk jest pusty</h2>
       <p class="text-muted mb-6">Przejdź do projektów, aby znaleźć coś dla siebie.</p>
@@ -80,7 +88,7 @@ const handleCheckout = async () => {
     <div v-else class="space-y-8">
       <!-- Cart Items -->
       <UCard>
-        <ul class="divide-y divide-[var(--ui-border)]">
+        <ul class="divide-y divide-default">
           <li
             v-for="item in cart.items"
             :key="item.id"
@@ -90,7 +98,7 @@ const handleCheckout = async () => {
               :to="item.variant?.product?.house_plan?.id ? `/produkty/${item.variant.product.house_plan.id}` : undefined"
               class="flex items-center gap-4 group flex-1 min-w-0"
             >
-              <div class="size-20 shrink-0 bg-[var(--ui-bg-elevated)] rounded-lg flex items-center justify-center overflow-hidden border border-[var(--ui-border)]">
+              <div class="size-20 shrink-0 bg-elevated rounded-lg flex items-center justify-center overflow-hidden border border-default">
                 <NuxtImg
                   v-if="item.variant?.product?.thumbnail"
                   :src="item.variant.product.thumbnail"
