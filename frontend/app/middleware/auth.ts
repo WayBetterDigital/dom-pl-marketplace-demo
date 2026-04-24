@@ -1,10 +1,13 @@
 import { useAuthService } from '~/composables/services/useAuthService'
 
 export default defineNuxtRouteMiddleware(async () => {
-  const { getSession } = useAuthService()
-  const customer = await getSession()
+  if (import.meta.server) return
 
-  if (!customer) {
+  const { customer, getSession } = useAuthService()
+  if (!customer.value) {
+    await getSession()
+  }
+  if (!customer.value) {
     return navigateTo('/konto/logowanie-klient')
   }
 })
