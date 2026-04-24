@@ -71,8 +71,6 @@ export async function POST(
     entity: "house_plan",
     fields: [
       ...HOUSE_PLAN_FIELDS,
-      "family.id",
-      "family.name",
       "product.id",
       "product.thumbnail",
       "product.images.id",

@@ -2,7 +2,6 @@
 definePageMeta({ middleware: 'vendor-auth' })
 import { useVendorService } from '~/composables/services/useVendorService'
 import { useVendorPlanForm } from '~/composables/useVendorPlanForm'
-import type { AppHousePlan } from '~/types/house-plan'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,8 +11,6 @@ const vendorId = route.query.vendorId as string
 const {
   createVendorHousePlan,
   uploadHousePlanImages,
-  listVendorPlanFamilies,
-  getVendorHousePlans,
 } = useVendorService()
 
 const {
@@ -23,66 +20,11 @@ const {
   dimensionsLabel,
   validate,
   toCreatePayload,
-  applyPrefillToEmptyFields,
 } = useVendorPlanForm()
 
 const creating = ref(false)
 const selectedImages = ref<File[]>([])
 const imagePreviews = ref<string[]>([])
-const families = ref<Array<{ id: string, name: string }>>([])
-const sourcePlanId = ref('')
-const vendorPlans = ref<AppHousePlan[]>([])
-
-const familyOptions = computed(() => [
-  { label: 'Brak rodziny', value: 'none' },
-  ...families.value.map(f => ({ label: f.name, value: f.id })),
-])
-
-const currentFamilyPlans = computed(() =>
-  vendorPlans.value.filter(plan => plan.family?.id === form.value.family_id)
-)
-
-const sourcePlanOptions = computed(() =>
-  currentFamilyPlans.value.map(plan => ({
-    label: `${plan.title} (${new Intl.NumberFormat('pl-PL', {
-      style: 'currency',
-      currency: 'PLN',
-      maximumFractionDigits: 0
-    }).format(plan.price)})`,
-    value: plan.id
-  }))
-)
-
-watch(() => form.value.family_id, () => {
-  sourcePlanId.value = ''
-})
-
-watch(sourcePlanId, (id) => {
-  if (!id) return
-  const source = currentFamilyPlans.value.find(p => p.id === id)
-  if (!source) return
-  applyPrefillToEmptyFields(source)
-  toast.add({
-    title: 'Pola uzupełnione',
-    description: 'Puste pola zostały uzupełnione z wybranego planu źródłowego.',
-    color: 'success',
-  })
-})
-
-onMounted(async () => {
-  if (!vendorId) return
-  try {
-    const [familyList, plans] = await Promise.all([
-      listVendorPlanFamilies(vendorId),
-      getVendorHousePlans(vendorId),
-    ])
-    families.value = familyList
-    vendorPlans.value = plans
-  } catch {
-    families.value = []
-    vendorPlans.value = []
-  }
-})
 
 function handleImageSelect(e: Event) {
   const input = e.target as HTMLInputElement
@@ -201,33 +143,6 @@ async function handleCreate() {
           <UInput v-model="form.title" size="xl" placeholder="Nazwa projektu" class="mb-2" :color="errors.title ? 'error' : 'neutral'" />
           <UInput v-model="form.price" type="number" size="xl" placeholder="Cena (PLN)" :color="errors.price ? 'error' : 'neutral'" />
         </div>
-
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Rodzina i seed</h3>
-          </template>
-          <div class="space-y-3">
-            <USelect
-              v-model="form.family_id"
-              :items="familyOptions"
-              value-key="value"
-              label-key="label"
-              placeholder="Wybierz rodzinę"
-            />
-
-            <USelect
-              v-if="form.family_id !== 'none'"
-              v-model="sourcePlanId"
-              :items="sourcePlanOptions"
-              value-key="value"
-              label-key="label"
-              placeholder="Seed: wybierz plan źródłowy"
-            />
-            <p v-if="form.family_id !== 'none' && !sourcePlanOptions.length" class="text-xs text-muted">
-              Brak planów w tej rodzinie do użycia jako źródło.
-            </p>
-          </div>
-        </UCard>
 
         <UCard>
           <template #header>

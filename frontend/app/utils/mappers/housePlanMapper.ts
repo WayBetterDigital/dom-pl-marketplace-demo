@@ -31,6 +31,5 @@ export function mapToAppHousePlan(raw: any): AppHousePlan {
     images: (raw.product?.images ?? []).map((img: any) => ({ id: img.id, url: img.url })),
     vendor: raw.vendor ?? null,
     variantId: raw.variant_id ?? null,
-    family: raw.family ?? null,
   }
 }

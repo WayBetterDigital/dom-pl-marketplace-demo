@@ -16,7 +16,6 @@ export interface HousePlanListParams {
   houseType?: string
   architecturalStyle?: string
   energyStandard?: string
-  familyId?: string
 }
 
 export function useHousePlanService() {
@@ -54,7 +53,6 @@ export function useHousePlanService() {
         if (params.houseType !== undefined) queryParams.append('house_type', params.houseType)
         if (params.architecturalStyle !== undefined) queryParams.append('architectural_style', params.architecturalStyle)
         if (params.energyStandard !== undefined) queryParams.append('energy_standard', params.energyStandard)
-        if (params.familyId !== undefined) queryParams.append('family_id', params.familyId)
       }
 
       const queryString = queryParams.toString()

@@ -38,5 +38,4 @@ export interface AppHousePlan {
   images: { id: string, url: string }[]
   vendor?: HousePlanVendor | null
   variantId?: string | null
-  family?: { id: string, name: string } | null
 }

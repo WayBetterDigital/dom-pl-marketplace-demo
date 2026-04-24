@@ -26,7 +26,6 @@ export type VendorPlanForm = {
   fireplace: string
   terrace: string
   house_type: string
-  family_id: string
 }
 
 const emptyFormState = (): VendorPlanForm => ({
@@ -54,7 +53,6 @@ const emptyFormState = (): VendorPlanForm => ({
   fireplace: '',
   terrace: '',
   house_type: '',
-  family_id: 'none',
 })
 
 const toNumber = (value: string): number | undefined => {
@@ -103,7 +101,6 @@ const prefillFromPlan = (plan: AppHousePlan): Partial<VendorPlanForm> => ({
   fireplace: boolToTakNie(plan.fireplace),
   terrace: boolToTakNie(plan.terrace),
   house_type: plan.houseType ?? '',
-  family_id: plan.family?.id ?? 'none',
 })
 
 export function useVendorPlanForm() {
@@ -165,7 +162,6 @@ export function useVendorPlanForm() {
       ...(boolFromTakNie(form.value.fireplace) !== undefined && { fireplace: boolFromTakNie(form.value.fireplace) }),
       ...(boolFromTakNie(form.value.terrace) !== undefined && { terrace: boolFromTakNie(form.value.terrace) }),
       ...(form.value.house_type && { house_type: form.value.house_type }),
-      ...(form.value.family_id !== 'none' && { family_id: form.value.family_id }),
     }
   }
 

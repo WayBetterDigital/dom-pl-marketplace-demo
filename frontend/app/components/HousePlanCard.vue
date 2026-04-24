@@ -30,21 +30,6 @@ const formatPrice = (price: number) => {
         <h3 class="text-lg font-semibold truncate" :title="plan.title">
           {{ plan.title }}
         </h3>
-        <div
-          v-if="plan.family"
-          class="flex items-center gap-1 mb-1"
-        >
-          <UIcon name="i-lucide-layers-2" class="size-3.5 text-muted shrink-0" />
-          <span class="text-xs text-muted truncate">
-            {{ plan.family.name }}
-          </span>
-        </div>
-        <div
-          v-else
-          class="text-xs"
-        >
-          &nbsp;
-        </div>
         <p class="text-xl font-bold text-primary mt-1">
           {{ formatPrice(plan.price) }}
         </p>

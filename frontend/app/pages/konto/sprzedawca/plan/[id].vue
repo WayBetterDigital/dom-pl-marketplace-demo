@@ -4,7 +4,6 @@ import { createError, useAsyncData } from "#imports";
 import { useHousePlanService } from "~/composables/services/useHousePlanService";
 import { useVendorService } from "~/composables/services/useVendorService";
 import { useVendorPlanForm } from "~/composables/useVendorPlanForm";
-import type { AppHousePlan } from "~/types/house-plan";
 
 const route = useRoute();
 const toast = useToast();
@@ -12,8 +11,7 @@ const vendorId = route.query.vendorId as string;
 const planId = route.params.id as string;
 
 const { getHousePlan } = useHousePlanService();
-const { updateVendorHousePlan, listVendorPlanFamilies, getVendorHousePlans } =
-  useVendorService();
+const { updateVendorHousePlan } = useVendorService();
 
 const {
   data: plan,
@@ -39,35 +37,7 @@ const {
   validate,
   toUpdatePayload,
   loadFromPlan,
-  applyPrefillToEmptyFields,
 } = useVendorPlanForm();
-
-const families = ref<Array<{ id: string; name: string }>>([]);
-const sourcePlanId = ref("");
-const vendorPlans = ref<AppHousePlan[]>([]);
-
-const familyOptions = computed(() => [
-  { label: "Brak rodziny", value: "none" },
-  ...families.value.map((f) => ({ label: f.name, value: f.id })),
-]);
-
-const currentFamilyPlans = computed(() =>
-  vendorPlans.value.filter(
-    (candidate) =>
-      candidate.id !== planId && candidate.family?.id === form.value.family_id,
-  ),
-);
-
-const sourcePlanOptions = computed(() =>
-  currentFamilyPlans.value.map((candidate) => ({
-    label: `${candidate.title} (${new Intl.NumberFormat("pl-PL", {
-      style: "currency",
-      currency: "PLN",
-      maximumFractionDigits: 0,
-    }).format(candidate.price)})`,
-    value: candidate.id,
-  })),
-);
 
 watch(
   () => plan.value,
@@ -76,40 +46,6 @@ watch(
   },
   { immediate: true },
 );
-
-watch(
-  () => form.value.family_id,
-  () => {
-    sourcePlanId.value = "";
-  },
-);
-
-watch(sourcePlanId, (id) => {
-  if (!id) return;
-  const source = currentFamilyPlans.value.find((p) => p.id === id);
-  if (!source) return;
-  applyPrefillToEmptyFields(source);
-  toast.add({
-    title: "Pola uzupełnione",
-    description: "Puste pola zostały uzupełnione z wybranego planu źródłowego.",
-    color: "success",
-  });
-});
-
-onMounted(async () => {
-  if (!vendorId) return;
-  try {
-    const [familyList, plans] = await Promise.all([
-      listVendorPlanFamilies(vendorId),
-      getVendorHousePlans(vendorId),
-    ]);
-    families.value = familyList;
-    vendorPlans.value = plans;
-  } catch {
-    families.value = [];
-    vendorPlans.value = [];
-  }
-});
 
 const saving = ref(false);
 
@@ -219,35 +155,6 @@ const formatPrice = (price: number) => {
                 {{ plan.vendor.first_name }} {{ plan.vendor.last_name }}
               </p>
             </div>
-          </div>
-        </UCard>
-
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Rodzina i seed</h3>
-          </template>
-          <div class="space-y-3">
-            <USelect
-              v-model="form.family_id"
-              :items="familyOptions"
-              value-key="value"
-              label-key="label"
-              placeholder="Wybierz rodzinę"
-            />
-            <USelect
-              v-if="form.family_id !== 'none'"
-              v-model="sourcePlanId"
-              :items="sourcePlanOptions"
-              value-key="value"
-              label-key="label"
-              placeholder="Seed: wybierz plan źródłowy"
-            />
-            <p
-              v-if="form.family_id !== 'none' && !sourcePlanOptions.length"
-              class="text-xs text-muted"
-            >
-              Brak innych planów w tej rodzinie do użycia jako źródło.
-            </p>
           </div>
         </UCard>
 
