@@ -34,8 +34,6 @@ if (error.value || !plan.value) {
 const {
   form,
   errors,
-  roofLabel,
-  dimensionsLabel,
   validate,
   toUpdatePayload,
   loadFromPlan,
@@ -304,17 +302,31 @@ const formatPrice = (price: number) => {
           </template>
           <div class="space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UInput v-model="form.house_type" placeholder="Typ domu" />
-              <UInput
+              <USelect
+                v-model="form.house_type"
+                :items="[{ label: 'Jednorodzinny', value: 'jednorodzinny' }, { label: 'Bliźniak', value: 'bliźniak' }, { label: 'Rekreacyjny', value: 'rekreacyjny' }]"
+                value-key="value" label-key="label" placeholder="Typ domu"
+              />
+              <USelect
                 v-model="form.architectural_style"
-                placeholder="Styl architektoniczny"
+                :items="[{ label: 'Tradycyjny', value: 'tradycyjny' }, { label: 'Nowoczesny', value: 'nowoczesny' }, { label: 'Klasyczny', value: 'klasyczny' }, { label: 'Skandynawski', value: 'skandynawski' }]"
+                value-key="value" label-key="label" placeholder="Styl architektoniczny"
               />
-              <UInput
+              <USelect
                 v-model="form.energy_standard"
-                placeholder="Standard energetyczny"
+                :items="[{ label: 'Standard', value: 'standard' }, { label: 'Energooszczędny', value: 'energooszczędny' }, { label: 'Pasywny', value: 'pasywny' }]"
+                value-key="value" label-key="label" placeholder="Standard energetyczny"
               />
-              <UInput v-model="form.garage" placeholder="Garaż" />
-              <UInput v-model="form.basement" placeholder="Piwnica" />
+              <USelect
+                v-model="form.garage"
+                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Jednostanowiskowy', value: 'jednostanowiskowy' }, { label: 'Dwustanowiskowy', value: 'dwustanowiskowy' }, { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }]"
+                value-key="value" label-key="label" placeholder="Garaż"
+              />
+              <USelect
+                v-model="form.basement"
+                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Częściowa', value: 'częściowa' }, { label: 'Pełna', value: 'pełna' }]"
+                value-key="value" label-key="label" placeholder="Piwnica"
+              />
               <USelect
                 v-model="form.fireplace"
                 :items="[
@@ -335,11 +347,15 @@ const formatPrice = (price: number) => {
                 label-key="label"
                 placeholder="Taras"
               />
-              <UInput v-model="form.roof_type" placeholder="Typ dachu" />
+              <USelect
+                v-model="form.roof_type"
+                :items="[{ label: 'Dwuspadowy', value: 'dwuspadowy' }, { label: 'Czterospadowy', value: 'czterospadowy' }, { label: 'Płaski', value: 'płaski' }, { label: 'Mansardowy', value: 'mansardowy' }, { label: 'Jednospadowy', value: 'jednospadowy' }]"
+                value-key="value" label-key="label" placeholder="Typ dachu"
+              />
               <UInput
                 v-model="form.roof_angle"
                 type="number"
-                placeholder="Kąt nachylenia dachu"
+                placeholder="Kąt nachylenia dachu (°)"
               />
               <UInput
                 v-model="form.building_width"
@@ -365,18 +381,6 @@ const formatPrice = (price: number) => {
                 v-model="form.total_area"
                 type="number"
                 placeholder="Powierzchnia całkowita"
-              />
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UInput
-                :model-value="roofLabel ?? ''"
-                disabled
-                placeholder="Podgląd: Dach"
-              />
-              <UInput
-                :model-value="dimensionsLabel ?? ''"
-                disabled
-                placeholder="Podgląd: Wymiary budynku"
               />
             </div>
           </div>

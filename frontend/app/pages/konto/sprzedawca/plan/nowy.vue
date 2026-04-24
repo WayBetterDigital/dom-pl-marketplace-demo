@@ -19,8 +19,6 @@ const {
 const {
   form,
   errors,
-  roofLabel,
-  dimensionsLabel,
   validate,
   toCreatePayload,
   applyPrefillToEmptyFields,
@@ -252,18 +250,42 @@ async function handleCreate() {
           <div class="space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <UInput v-model="form.floors" type="number" placeholder="Liczba kondygnacji" />
-              <UInput v-model="form.house_type" placeholder="Typ domu" />
+              <USelect
+                v-model="form.house_type"
+                :items="[{ label: 'Jednorodzinny', value: 'jednorodzinny' }, { label: 'Bliźniak', value: 'bliźniak' }, { label: 'Rekreacyjny', value: 'rekreacyjny' }]"
+                value-key="value" label-key="label" placeholder="Typ domu"
+              />
               <UInput v-model="form.building_width" type="number" placeholder="Szerokość budynku (m)" />
               <UInput v-model="form.building_length" type="number" placeholder="Długość budynku (m)" />
               <UInput v-model="form.building_height" type="number" placeholder="Wysokość budynku (m)" />
               <UInput v-model="form.building_footprint" type="number" placeholder="Powierzchnia zabudowy (m²)" />
               <UInput v-model="form.total_area" type="number" placeholder="Powierzchnia całkowita (m²)" />
-              <UInput v-model="form.roof_type" placeholder="Typ dachu" />
-              <UInput v-model="form.roof_angle" type="number" placeholder="Kąt dachu" />
-              <UInput v-model="form.garage" placeholder="Garaż" />
-              <UInput v-model="form.basement" placeholder="Piwnica" />
-              <UInput v-model="form.architectural_style" placeholder="Styl architektoniczny" />
-              <UInput v-model="form.energy_standard" placeholder="Standard energetyczny" />
+              <USelect
+                v-model="form.roof_type"
+                :items="[{ label: 'Dwuspadowy', value: 'dwuspadowy' }, { label: 'Czterospadowy', value: 'czterospadowy' }, { label: 'Płaski', value: 'płaski' }, { label: 'Mansardowy', value: 'mansardowy' }, { label: 'Jednospadowy', value: 'jednospadowy' }]"
+                value-key="value" label-key="label" placeholder="Typ dachu"
+              />
+              <UInput v-model="form.roof_angle" type="number" placeholder="Kąt dachu (°)" />
+              <USelect
+                v-model="form.garage"
+                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Jednostanowiskowy', value: 'jednostanowiskowy' }, { label: 'Dwustanowiskowy', value: 'dwustanowiskowy' }, { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }]"
+                value-key="value" label-key="label" placeholder="Garaż"
+              />
+              <USelect
+                v-model="form.basement"
+                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Częściowa', value: 'częściowa' }, { label: 'Pełna', value: 'pełna' }]"
+                value-key="value" label-key="label" placeholder="Piwnica"
+              />
+              <USelect
+                v-model="form.architectural_style"
+                :items="[{ label: 'Tradycyjny', value: 'tradycyjny' }, { label: 'Nowoczesny', value: 'nowoczesny' }, { label: 'Klasyczny', value: 'klasyczny' }, { label: 'Skandynawski', value: 'skandynawski' }]"
+                value-key="value" label-key="label" placeholder="Styl architektoniczny"
+              />
+              <USelect
+                v-model="form.energy_standard"
+                :items="[{ label: 'Standard', value: 'standard' }, { label: 'Energooszczędny', value: 'energooszczędny' }, { label: 'Pasywny', value: 'pasywny' }]"
+                value-key="value" label-key="label" placeholder="Standard energetyczny"
+              />
               <USelect
                 v-model="form.fireplace"
                 :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]"
@@ -278,10 +300,6 @@ async function handleCreate() {
                 label-key="label"
                 placeholder="Taras"
               />
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UInput :model-value="roofLabel ?? ''" disabled placeholder="Podgląd etykiety dachu" />
-              <UInput :model-value="dimensionsLabel ?? ''" disabled placeholder="Podgląd wymiarów budynku" />
             </div>
           </div>
 
