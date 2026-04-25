@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from '#imports'
+import { VENDOR_TOKEN_KEY } from '~/composables/services/useVendorAuthService'
 
 export type GalleryCategory = 'wizualizacje' | 'strefa_dzienna' | 'kuchnia' | 'lazienka'
 export const GALLERY_CATEGORIES: GalleryCategory[] = ['wizualizacje', 'strefa_dzienna', 'kuchnia', 'lazienka']
@@ -20,9 +21,19 @@ export function useGalleryService() {
     ? (config.medusaBaseUrl as string)
     : config.public.medusa.baseUrl
 
+  const publishableKey = config.public.medusa.publishableKey as string
+
   const fetchOptions = {
     headers: {
-      'x-publishable-api-key': config.public.medusa.publishableKey as string
+      'x-publishable-api-key': publishableKey
+    }
+  }
+
+  function authHeaders(): Record<string, string> {
+    const token = import.meta.client ? localStorage.getItem(VENDOR_TOKEN_KEY) : null
+    return {
+      'x-publishable-api-key': publishableKey,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     }
   }
 
@@ -59,8 +70,8 @@ export function useGalleryService() {
     const response = await $fetch<{ gallery_image: GalleryImage }>(
       `${baseUrl}/store/vendors/${vendorId}/house-plans/${planId}/gallery`,
       {
-        ...fetchOptions,
         method: 'POST',
+        headers: authHeaders(),
         body: {
           filename: file.name,
           mimeType: file.type,
@@ -82,8 +93,8 @@ export function useGalleryService() {
     const response = await $fetch<{ gallery_image: GalleryImage }>(
       `${baseUrl}/store/vendors/${vendorId}/house-plans/${planId}/gallery/${imageId}`,
       {
-        ...fetchOptions,
         method: 'POST',
+        headers: authHeaders(),
         body: data
       }
     )
@@ -93,7 +104,7 @@ export function useGalleryService() {
   async function deleteGalleryImage(vendorId: string, planId: string, imageId: string): Promise<void> {
     await $fetch(
       `${baseUrl}/store/vendors/${vendorId}/house-plans/${planId}/gallery/${imageId}`,
-      { ...fetchOptions, method: 'DELETE' }
+      { method: 'DELETE', headers: authHeaders() }
     )
   }
 

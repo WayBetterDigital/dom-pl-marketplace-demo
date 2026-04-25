@@ -3,7 +3,9 @@ import { useVendorService } from '~/composables/services/useVendorService'
 import { useVendorPlanForm } from '~/composables/useVendorPlanForm'
 import { useGalleryService, GALLERY_CATEGORIES } from '~/composables/services/useGalleryService'
 import { useFileService, formatFileSize, fileIcon, fileIconColor } from '~/composables/services/useFileService'
+import { useSketchService, FLOOR_OPTIONS, TYPE_OPTIONS, floorLabel } from '~/composables/services/useSketchService'
 import type { GalleryCategory } from '~/composables/services/useGalleryService'
+import type { SketchType } from '~/composables/services/useSketchService'
 import type { AppHousePlan } from '~/types/house-plan'
 
 definePageMeta({ middleware: 'vendor-auth' })
@@ -16,6 +18,7 @@ const vendorId = route.query.vendorId as string
 const { createVendorHousePlan, uploadHousePlanImages, listVendorPlanFamilies, getVendorHousePlans } = useVendorService()
 const { uploadGalleryImage } = useGalleryService()
 const { uploadFile } = useFileService()
+const { createSketch } = useSketchService()
 
 const { form, errors, validate, toCreatePayload, applyPrefillToEmptyFields } = useVendorPlanForm()
 
@@ -31,6 +34,50 @@ const mainPreviews = ref<string[]>([])
 type StagedImage = { file: File; preview: string; description: string; category: GalleryCategory }
 const stagedImages = ref<StagedImage[]>([])
 const stagedFiles = ref<File[]>([])
+
+type StagedSketch = { file: File, preview: string, floor: number, type: SketchType }
+const stagedSketches = ref<StagedSketch[]>([])
+
+const sketchModalOpen = ref(false)
+const sketchFormFile = ref<File | null>(null)
+const sketchFormPreview = ref<string | null>(null)
+const sketchFormFloor = ref('0')
+const sketchFormType = ref('0')
+
+function openSketchModal() {
+  sketchFormFile.value = null
+  sketchFormPreview.value = null
+  sketchFormFloor.value = '0'
+  sketchFormType.value = '0'
+  sketchModalOpen.value = true
+}
+
+function handleSketchFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  sketchFormFile.value = file
+  if (sketchFormPreview.value) URL.revokeObjectURL(sketchFormPreview.value)
+  sketchFormPreview.value = URL.createObjectURL(file)
+}
+
+function addStagedSketch() {
+  if (!sketchFormFile.value) return
+  stagedSketches.value.push({
+    file: sketchFormFile.value,
+    preview: sketchFormPreview.value!,
+    floor: Number(sketchFormFloor.value),
+    type: Number(sketchFormType.value) as SketchType,
+  })
+  sketchModalOpen.value = false
+  sketchFormFile.value = null
+  sketchFormPreview.value = null
+}
+
+function removeStagedSketch(index: number) {
+  URL.revokeObjectURL(stagedSketches.value[index]!.preview)
+  stagedSketches.value.splice(index, 1)
+}
 
 const CATEGORY_LABELS: Record<GalleryCategory, string> = {
   wizualizacje: 'Wizualizacje',
@@ -174,6 +221,13 @@ async function handleCreate() {
       await uploadFile(createdId, file)
     } catch {
       toast.add({ title: 'Ostrzeżenie', description: `Nie udało się wgrać ${file.name}.`, color: 'warning' })
+    }
+  }
+  for (const sketch of stagedSketches.value) {
+    try {
+      await createSketch(createdId, { file: sketch.file, floor: sketch.floor, type: sketch.type })
+    } catch {
+      toast.add({ title: 'Ostrzeżenie', description: `Nie udało się wgrać rzutu: ${sketch.file.name}.`, color: 'warning' })
     }
   }
 
@@ -326,9 +380,140 @@ async function handleCreate() {
           <UTextarea
             v-model="form.description"
             :rows="8"
+            class="w-full"
             placeholder="Opisz projekt — styl, rozwiązania architektoniczne, przeznaczenie..."
           />
         </div>
+
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-default">
+              Rzuty kondygnacji
+            </h2>
+            <UButton
+              icon="i-lucide-plus"
+              size="sm"
+              variant="outline"
+              @click="openSketchModal"
+            >
+              Dodaj szkic
+            </UButton>
+          </div>
+
+          <div
+            v-if="!stagedSketches.length"
+            class="flex flex-col items-center justify-center gap-3 py-12 border border-dashed border-default rounded-xl text-center"
+          >
+            <UIcon
+              name="i-lucide-layout-panel-top"
+              class="size-10 text-muted"
+            />
+            <p class="text-sm text-muted">
+              Brak rzutów kondygnacji.
+            </p>
+          </div>
+
+          <div
+            v-for="(sketch, index) in stagedSketches"
+            :key="sketch.preview"
+            class="flex flex-col gap-2"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-muted">
+                {{ floorLabel(sketch.floor) }} — {{ sketch.type === 0 ? 'Rzut' : 'Rzut z opisami' }}
+              </span>
+              <button
+                type="button"
+                class="text-error hover:text-error/80 cursor-pointer"
+                @click="removeStagedSketch(index)"
+              >
+                <UIcon
+                  name="i-lucide-trash-2"
+                  class="size-4"
+                />
+              </button>
+            </div>
+            <div class="relative aspect-video w-full rounded-xl overflow-hidden border border-default">
+              <img
+                :src="sketch.preview"
+                :alt="floorLabel(sketch.floor)"
+                class="w-full h-full object-contain"
+              >
+            </div>
+          </div>
+        </div>
+
+        <UModal
+          v-model:open="sketchModalOpen"
+          title="Dodaj rzut kondygnacji"
+          :ui="{ footer: 'justify-end' }"
+        >
+          <template #body>
+            <div class="space-y-4 p-1">
+              <div
+                v-if="sketchFormPreview"
+                class="aspect-video rounded-lg overflow-hidden border border-default bg-muted"
+              >
+                <img
+                  :src="sketchFormPreview"
+                  alt=""
+                  class="w-full h-full object-contain"
+                >
+              </div>
+              <div class="space-y-1">
+                <label class="text-sm font-medium text-default">Plik szkicu *</label>
+                <label class="cursor-pointer block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    @change="handleSketchFileChange"
+                  >
+                  <div class="flex items-center gap-2 border border-dashed border-default rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors">
+                    <UIcon
+                      name="i-lucide-image-plus"
+                      class="size-5 text-muted shrink-0"
+                    />
+                    <span class="text-sm text-muted">{{ sketchFormFile ? sketchFormFile.name : 'Wybierz plik...' }}</span>
+                  </div>
+                </label>
+              </div>
+              <div class="space-y-1">
+                <label class="text-sm font-medium text-default">Kondygnacja</label>
+                <USelect
+                  v-model="sketchFormFloor"
+                  :items="FLOOR_OPTIONS"
+                  value-key="value"
+                  label-key="label"
+                />
+              </div>
+              <div class="space-y-1">
+                <label class="text-sm font-medium text-default">Typ</label>
+                <USelect
+                  v-model="sketchFormType"
+                  :items="TYPE_OPTIONS"
+                  value-key="value"
+                  label-key="label"
+                />
+              </div>
+            </div>
+          </template>
+          <template #footer>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="sketchModalOpen = false"
+            >
+              Anuluj
+            </UButton>
+            <UButton
+              :disabled="!sketchFormFile"
+              @click="addStagedSketch"
+            >
+              Dodaj
+            </UButton>
+          </template>
+        </UModal>
       </div>
 
       <!-- Prawa kolumna: tytuł, cena, pola -->
