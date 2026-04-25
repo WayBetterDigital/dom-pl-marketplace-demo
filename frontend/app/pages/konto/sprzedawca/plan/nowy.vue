@@ -179,7 +179,7 @@ async function handleCreate() {
 
   toast.add({ title: 'Plan utworzony', color: 'success' })
   creating.value = false
-  await router.push(`/konto/sprzedawca/plan/${createdId}?vendorId=${vendorId}`)
+  await router.push(`/produkty/${createdId}`)
 }
 </script>
 
