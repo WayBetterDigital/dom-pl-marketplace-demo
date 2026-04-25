@@ -24,14 +24,14 @@ const { form, errors, validate, toCreatePayload, applyPrefillToEmptyFields } = u
 
 const activeTab = ref<'dane' | 'galeria' | 'pliki'>('dane')
 const creating = ref(false)
-const families = ref<Array<{ id: string; name: string }>>([])
+const families = ref<Array<{ id: string, name: string }>>([])
 const sourcePlanId = ref('')
 const vendorPlans = ref<AppHousePlan[]>([])
 
 const mainImages = ref<File[]>([])
 const mainPreviews = ref<string[]>([])
 
-type StagedImage = { file: File; preview: string; description: string; category: GalleryCategory }
+type StagedImage = { file: File, preview: string, description: string, category: GalleryCategory }
 const stagedImages = ref<StagedImage[]>([])
 const stagedFiles = ref<File[]>([])
 
@@ -43,6 +43,33 @@ const sketchFormFile = ref<File | null>(null)
 const sketchFormPreview = ref<string | null>(null)
 const sketchFormFloor = ref('0')
 const sketchFormType = ref('0')
+
+const stagedSketchesByFloor = computed(() => {
+  const floors = [...new Set(stagedSketches.value.map(s => s.floor))].sort((a, b) => a - b)
+  return floors.map(floor => ({
+    floor,
+    label: floorLabel(floor),
+    base: stagedSketches.value.find(s => s.floor === floor && s.type === 0) ?? null,
+    withLabels: stagedSketches.value.find(s => s.floor === floor && s.type === 1) ?? null
+  }))
+})
+
+const showLabels = reactive<Record<number, boolean>>({})
+
+function toggleStagedLabels(floor: number) {
+  showLabels[floor] = !showLabels[floor]
+}
+
+type SketchGroup = { base: StagedSketch | null, withLabels: StagedSketch | null }
+
+function activeStagedPreview(floor: number, group: SketchGroup): string {
+  if (showLabels[floor] && group.withLabels) return group.withLabels.preview
+  return group.base?.preview ?? group.withLabels?.preview ?? ''
+}
+
+function activeStagedType(floor: number, group: SketchGroup): SketchType {
+  return (showLabels[floor] && group.withLabels) ? 1 : (group.base ? 0 : 1)
+}
 
 function openSketchModal() {
   sketchFormFile.value = null
@@ -63,33 +90,42 @@ function handleSketchFileChange(e: Event) {
 
 function addStagedSketch() {
   if (!sketchFormFile.value) return
+  const floor = Number(sketchFormFloor.value)
+  const type = Number(sketchFormType.value) as SketchType
+  const existingIdx = stagedSketches.value.findIndex(s => s.floor === floor && s.type === type)
+  if (existingIdx !== -1) {
+    URL.revokeObjectURL(stagedSketches.value[existingIdx]!.preview)
+    stagedSketches.value.splice(existingIdx, 1)
+  }
   stagedSketches.value.push({
     file: sketchFormFile.value,
     preview: sketchFormPreview.value!,
-    floor: Number(sketchFormFloor.value),
-    type: Number(sketchFormType.value) as SketchType,
+    floor,
+    type
   })
   sketchModalOpen.value = false
   sketchFormFile.value = null
   sketchFormPreview.value = null
 }
 
-function removeStagedSketch(index: number) {
-  URL.revokeObjectURL(stagedSketches.value[index]!.preview)
-  stagedSketches.value.splice(index, 1)
+function removeStagedSketch(floor: number, type: SketchType) {
+  const idx = stagedSketches.value.findIndex(s => s.floor === floor && s.type === type)
+  if (idx === -1) return
+  URL.revokeObjectURL(stagedSketches.value[idx]!.preview)
+  stagedSketches.value.splice(idx, 1)
 }
 
 const CATEGORY_LABELS: Record<GalleryCategory, string> = {
   wizualizacje: 'Wizualizacje',
   strefa_dzienna: 'Strefa dzienna',
   kuchnia: 'Kuchnia',
-  lazienka: 'Łazienka',
+  lazienka: 'Łazienka'
 }
 const categoryOptions = GALLERY_CATEGORIES.map(c => ({ label: CATEGORY_LABELS[c], value: c }))
 
 const familyOptions = computed(() => [
   { label: 'Brak rodziny', value: 'none' },
-  ...families.value.map(f => ({ label: f.name, value: f.id })),
+  ...families.value.map(f => ({ label: f.name, value: f.id }))
 ])
 
 const currentFamilyPlans = computed(() =>
@@ -99,11 +135,13 @@ const currentFamilyPlans = computed(() =>
 const sourcePlanOptions = computed(() =>
   currentFamilyPlans.value.map(plan => ({
     label: `${plan.title} (${new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(plan.price)})`,
-    value: plan.id,
+    value: plan.id
   }))
 )
 
-watch(() => form.value.family_id, () => { sourcePlanId.value = '' })
+watch(() => form.value.family_id, () => {
+  sourcePlanId.value = ''
+})
 
 watch(sourcePlanId, (id) => {
   if (!id) return
@@ -265,7 +303,7 @@ async function handleCreate() {
           type="button"
           :class="[
             'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer',
-            activeTab === 'dane' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default',
+            activeTab === 'dane' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default'
           ]"
           @click="activeTab = 'dane'"
         >
@@ -275,7 +313,7 @@ async function handleCreate() {
           type="button"
           :class="[
             'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer',
-            activeTab === 'galeria' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default',
+            activeTab === 'galeria' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default'
           ]"
           @click="activeTab = 'galeria'"
         >
@@ -291,7 +329,7 @@ async function handleCreate() {
           type="button"
           :class="[
             'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer',
-            activeTab === 'pliki' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default',
+            activeTab === 'pliki' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default'
           ]"
           @click="activeTab = 'pliki'"
         >
@@ -307,7 +345,10 @@ async function handleCreate() {
     </nav>
 
     <!-- Zakładka: Dane projektu -->
-    <div v-show="activeTab === 'dane'" class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+    <div
+      v-show="activeTab === 'dane'"
+      class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12"
+    >
       <!-- Lewa kolumna: zdjęcia główne + opis -->
       <div class="flex flex-col gap-8">
         <label class="cursor-pointer block">
@@ -376,7 +417,9 @@ async function handleCreate() {
         </div>
 
         <div>
-          <h2 class="text-xl font-semibold text-default mb-4">Opis projektu</h2>
+          <h2 class="text-xl font-semibold text-default mb-4">
+            Opis projektu
+          </h2>
           <UTextarea
             v-model="form.description"
             :rows="8"
@@ -401,7 +444,7 @@ async function handleCreate() {
           </div>
 
           <div
-            v-if="!stagedSketches.length"
+            v-if="!stagedSketchesByFloor.length"
             class="flex flex-col items-center justify-center gap-3 py-12 border border-dashed border-default rounded-xl text-center"
           >
             <UIcon
@@ -414,31 +457,53 @@ async function handleCreate() {
           </div>
 
           <div
-            v-for="(sketch, index) in stagedSketches"
-            :key="sketch.preview"
-            class="flex flex-col gap-2"
+            v-for="group in stagedSketchesByFloor"
+            :key="group.floor"
+            class="flex flex-col gap-3"
           >
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-muted">
-                {{ floorLabel(sketch.floor) }} — {{ sketch.type === 0 ? 'Rzut' : 'Rzut z opisami' }}
-              </span>
-              <button
-                type="button"
-                class="text-error hover:text-error/80 cursor-pointer"
-                @click="removeStagedSketch(index)"
-              >
-                <UIcon
-                  name="i-lucide-trash-2"
-                  class="size-4"
-                />
-              </button>
-            </div>
+            <h3 class="text-base font-medium text-muted">
+              {{ group.label }}
+            </h3>
             <div class="relative aspect-video w-full rounded-xl overflow-hidden border border-default">
               <img
-                :src="sketch.preview"
-                :alt="floorLabel(sketch.floor)"
-                class="w-full h-full object-contain"
+                :src="activeStagedPreview(group.floor, group)"
+                :alt="group.label"
+                class="w-full h-full object-contain transition-transform duration-300"
               >
+              <div class="absolute inset-0 group">
+                <div class="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    title="Usuń widoczny szkic"
+                    class="size-7 rounded-full bg-red-500/85 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow transition-colors"
+                    @click="removeStagedSketch(group.floor, activeStagedType(group.floor, group))"
+                  >
+                    <UIcon
+                      name="i-lucide-trash-2"
+                      class="size-3.5"
+                    />
+                  </button>
+                </div>
+              </div>
+              <div class="absolute bottom-2 right-2 z-10 flex gap-2">
+                <button
+                  v-if="group.withLabels && group.base"
+                  type="button"
+                  :aria-label="showLabels[group.floor] ? 'Ukryj opisy pomieszczeń' : 'Pokaż opisy pomieszczeń'"
+                  :class="[
+                    'size-9 rounded-full shadow flex items-center justify-center transition-all cursor-pointer',
+                    showLabels[group.floor]
+                      ? 'bg-primary text-white opacity-100'
+                      : 'bg-white/85 text-gray-800 opacity-70 hover:opacity-100'
+                  ]"
+                  @click="toggleStagedLabels(group.floor)"
+                >
+                  <UIcon
+                    name="i-lucide-tag"
+                    class="size-5"
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -525,10 +590,21 @@ async function handleCreate() {
             placeholder="Nazwa projektu..."
             class="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted/40 text-default mb-1 leading-tight"
           >
-          <p v-if="errors.title" class="text-xs text-error mb-2">{{ errors.title }}</p>
+          <p
+            v-if="errors.title"
+            class="text-xs text-error mb-2"
+          >
+            {{ errors.title }}
+          </p>
 
-          <div v-if="families.length" class="flex items-center gap-2 mb-3">
-            <UIcon name="i-lucide-layers-2" class="size-4 text-muted shrink-0" />
+          <div
+            v-if="families.length"
+            class="flex items-center gap-2 mb-3"
+          >
+            <UIcon
+              name="i-lucide-layers-2"
+              class="size-4 text-muted shrink-0"
+            />
             <USelect
               v-model="form.family_id"
               :items="familyOptions"
@@ -558,181 +634,393 @@ async function handleCreate() {
             >
             <span class="text-3xl font-bold text-primary">zł</span>
           </div>
-          <p v-if="errors.price" class="text-xs text-error mt-1">{{ errors.price }}</p>
+          <p
+            v-if="errors.price"
+            class="text-xs text-error mt-1"
+          >
+            {{ errors.price }}
+          </p>
         </div>
 
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">Szczegóły projektu</h3>
+            <h3 class="text-lg font-semibold">
+              Szczegóły projektu
+            </h3>
           </template>
 
           <div class="space-y-0">
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-maximize" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-maximize"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Powierzchnia użytkowa <span class="text-error">*</span></span>
               </div>
               <div class="flex items-center gap-1.5">
-                <UInput v-model="form.house_area" type="number" size="xs" :color="errors.house_area ? 'error' : 'neutral'" class="w-20 [&_input]:text-right" placeholder="—" />
+                <UInput
+                  v-model="form.house_area"
+                  type="number"
+                  size="xs"
+                  :color="errors.house_area ? 'error' : 'neutral'"
+                  class="w-20 [&_input]:text-right"
+                  placeholder="—"
+                />
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-thermometer" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-thermometer"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Powierzchnia kotłowni</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <UInput v-model="form.boiler_room_area" type="number" size="xs" class="w-20 [&_input]:text-right" placeholder="—" />
+                <UInput
+                  v-model="form.boiler_room_area"
+                  type="number"
+                  size="xs"
+                  class="w-20 [&_input]:text-right"
+                  placeholder="—"
+                />
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-door-open" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-door-open"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Liczba pokoi <span class="text-error">*</span></span>
               </div>
-              <UInput v-model="form.rooms" type="number" size="xs" :color="errors.rooms ? 'error' : 'neutral'" class="w-20 [&_input]:text-right" placeholder="—" />
+              <UInput
+                v-model="form.rooms"
+                type="number"
+                size="xs"
+                :color="errors.rooms ? 'error' : 'neutral'"
+                class="w-20 [&_input]:text-right"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-layers" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-layers"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Liczba kondygnacji</span>
               </div>
-              <UInput v-model="form.floors" type="number" size="xs" class="w-20 [&_input]:text-right" placeholder="—" />
+              <UInput
+                v-model="form.floors"
+                type="number"
+                size="xs"
+                class="w-20 [&_input]:text-right"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-bath" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-bath"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Łazienki i WC <span class="text-error">*</span></span>
               </div>
-              <UInput v-model="form.bathrooms_and_wc" type="number" size="xs" :color="errors.bathrooms_and_wc ? 'error' : 'neutral'" class="w-20 [&_input]:text-right" placeholder="—" />
+              <UInput
+                v-model="form.bathrooms_and_wc"
+                type="number"
+                size="xs"
+                :color="errors.bathrooms_and_wc ? 'error' : 'neutral'"
+                class="w-20 [&_input]:text-right"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-ruler" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-ruler"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Min. wymiary działki <span class="text-error">*</span></span>
               </div>
-              <UInput v-model="form.plot_dimensions" size="xs" :color="errors.plot_dimensions ? 'error' : 'neutral'" class="w-28 [&_input]:text-right" placeholder="np. 20×30" />
+              <UInput
+                v-model="form.plot_dimensions"
+                size="xs"
+                :color="errors.plot_dimensions ? 'error' : 'neutral'"
+                class="w-28 [&_input]:text-right"
+                placeholder="np. 20×30"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-ruler" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-ruler"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Wymiary po adaptacji</span>
               </div>
-              <UInput v-model="form.min_plot_dimensions_after_adaptation" size="xs" class="w-28 [&_input]:text-right" placeholder="—" />
+              <UInput
+                v-model="form.min_plot_dimensions_after_adaptation"
+                size="xs"
+                class="w-28 [&_input]:text-right"
+                placeholder="—"
+              />
             </div>
           </div>
 
           <template #footer>
-            <p class="text-xs text-muted"><span class="text-error">*</span> Pola wymagane</p>
+            <p class="text-xs text-muted">
+              <span class="text-error">*</span> Pola wymagane
+            </p>
           </template>
         </UCard>
 
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">Charakterystyka budynku</h3>
+            <h3 class="text-lg font-semibold">
+              Charakterystyka budynku
+            </h3>
           </template>
 
           <div class="space-y-0">
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-home" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-home"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Typ domu</span>
               </div>
-              <USelect v-model="form.house_type" :items="[{ label: 'Jednorodzinny', value: 'jednorodzinny' }, { label: 'Bliźniak', value: 'bliźniak' }, { label: 'Rekreacyjny', value: 'rekreacyjny' }]" value-key="value" label-key="label" size="xs" class="w-44" placeholder="—" />
+              <USelect
+                v-model="form.house_type"
+                :items="[{ label: 'Jednorodzinny', value: 'jednorodzinny' }, { label: 'Bliźniak', value: 'bliźniak' }, { label: 'Rekreacyjny', value: 'rekreacyjny' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-44"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-pen-tool" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-pen-tool"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Styl architektoniczny</span>
               </div>
-              <USelect v-model="form.architectural_style" :items="[{ label: 'Tradycyjny', value: 'tradycyjny' }, { label: 'Nowoczesny', value: 'nowoczesny' }, { label: 'Klasyczny', value: 'klasyczny' }, { label: 'Skandynawski', value: 'skandynawski' }]" value-key="value" label-key="label" size="xs" class="w-44" placeholder="—" />
+              <USelect
+                v-model="form.architectural_style"
+                :items="[{ label: 'Tradycyjny', value: 'tradycyjny' }, { label: 'Nowoczesny', value: 'nowoczesny' }, { label: 'Klasyczny', value: 'klasyczny' }, { label: 'Skandynawski', value: 'skandynawski' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-44"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-zap" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-zap"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Standard energetyczny</span>
               </div>
-              <USelect v-model="form.energy_standard" :items="[{ label: 'Standard', value: 'standard' }, { label: 'Energooszczędny', value: 'energooszczędny' }, { label: 'Pasywny', value: 'pasywny' }]" value-key="value" label-key="label" size="xs" class="w-44" placeholder="—" />
+              <USelect
+                v-model="form.energy_standard"
+                :items="[{ label: 'Standard', value: 'standard' }, { label: 'Energooszczędny', value: 'energooszczędny' }, { label: 'Pasywny', value: 'pasywny' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-44"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-car" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-car"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Garaż</span>
               </div>
-              <USelect v-model="form.garage" :items="[{ label: 'Brak', value: 'brak' }, { label: 'Jednostanowiskowy', value: 'jednostanowiskowy' }, { label: 'Dwustanowiskowy', value: 'dwustanowiskowy' }, { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }]" value-key="value" label-key="label" size="xs" class="w-44" placeholder="—" />
+              <USelect
+                v-model="form.garage"
+                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Jednostanowiskowy', value: 'jednostanowiskowy' }, { label: 'Dwustanowiskowy', value: 'dwustanowiskowy' }, { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-44"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-arrow-down-to-line" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-arrow-down-to-line"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Piwnica</span>
               </div>
-              <USelect v-model="form.basement" :items="[{ label: 'Brak', value: 'brak' }, { label: 'Częściowa', value: 'częściowa' }, { label: 'Pełna', value: 'pełna' }]" value-key="value" label-key="label" size="xs" class="w-44" placeholder="—" />
+              <USelect
+                v-model="form.basement"
+                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Częściowa', value: 'częściowa' }, { label: 'Pełna', value: 'pełna' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-44"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-flame" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-flame"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Kominek</span>
               </div>
-              <USelect v-model="form.fireplace" :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]" value-key="value" label-key="label" size="xs" class="w-28" placeholder="—" />
+              <USelect
+                v-model="form.fireplace"
+                :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-28"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-sun" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-sun"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Taras</span>
               </div>
-              <USelect v-model="form.terrace" :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]" value-key="value" label-key="label" size="xs" class="w-28" placeholder="—" />
+              <USelect
+                v-model="form.terrace"
+                :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]"
+                value-key="value"
+                label-key="label"
+                size="xs"
+                class="w-28"
+                placeholder="—"
+              />
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-triangle" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-triangle"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Dach</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <USelect v-model="form.roof_type" :items="[{ label: 'Dwuspadowy', value: 'dwuspadowy' }, { label: 'Czterospadowy', value: 'czterospadowy' }, { label: 'Płaski', value: 'płaski' }, { label: 'Mansardowy', value: 'mansardowy' }, { label: 'Jednospadowy', value: 'jednospadowy' }]" value-key="value" label-key="label" size="xs" class="w-36" placeholder="Typ" />
-                <UInput v-model="form.roof_angle" type="number" size="xs" class="w-16 [&_input]:text-right" placeholder="°" />
+                <USelect
+                  v-model="form.roof_type"
+                  :items="[{ label: 'Dwuspadowy', value: 'dwuspadowy' }, { label: 'Czterospadowy', value: 'czterospadowy' }, { label: 'Płaski', value: 'płaski' }, { label: 'Mansardowy', value: 'mansardowy' }, { label: 'Jednospadowy', value: 'jednospadowy' }]"
+                  value-key="value"
+                  label-key="label"
+                  size="xs"
+                  class="w-36"
+                  placeholder="Typ"
+                />
+                <UInput
+                  v-model="form.roof_angle"
+                  type="number"
+                  size="xs"
+                  class="w-16 [&_input]:text-right"
+                  placeholder="°"
+                />
               </div>
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-move-horizontal" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-move-horizontal"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Wymiary budynku</span>
               </div>
               <div class="flex items-center gap-1 text-sm text-muted">
-                <UInput v-model="form.building_width" type="number" size="xs" class="w-16 [&_input]:text-right" placeholder="szer." />
+                <UInput
+                  v-model="form.building_width"
+                  type="number"
+                  size="xs"
+                  class="w-16 [&_input]:text-right"
+                  placeholder="szer."
+                />
                 <span>×</span>
-                <UInput v-model="form.building_length" type="number" size="xs" class="w-16 [&_input]:text-right" placeholder="dł." />
+                <UInput
+                  v-model="form.building_length"
+                  type="number"
+                  size="xs"
+                  class="w-16 [&_input]:text-right"
+                  placeholder="dł."
+                />
                 <span>m</span>
               </div>
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-move-vertical" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-move-vertical"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Wysokość budynku</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <UInput v-model="form.building_height" type="number" size="xs" class="w-20 [&_input]:text-right" placeholder="—" />
+                <UInput
+                  v-model="form.building_height"
+                  type="number"
+                  size="xs"
+                  class="w-20 [&_input]:text-right"
+                  placeholder="—"
+                />
                 <span class="text-sm text-muted">m</span>
               </div>
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-square" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-square"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Powierzchnia zabudowy</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <UInput v-model="form.building_footprint" type="number" size="xs" class="w-20 [&_input]:text-right" placeholder="—" />
+                <UInput
+                  v-model="form.building_footprint"
+                  type="number"
+                  size="xs"
+                  class="w-20 [&_input]:text-right"
+                  placeholder="—"
+                />
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
             <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
               <div class="flex items-center gap-2 text-muted">
-                <UIcon name="i-lucide-layout" class="size-5 shrink-0" />
+                <UIcon
+                  name="i-lucide-layout"
+                  class="size-5 shrink-0"
+                />
                 <span class="text-sm">Powierzchnia całkowita</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <UInput v-model="form.total_area" type="number" size="xs" class="w-20 [&_input]:text-right" placeholder="—" />
+                <UInput
+                  v-model="form.total_area"
+                  type="number"
+                  size="xs"
+                  class="w-20 [&_input]:text-right"
+                  placeholder="—"
+                />
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
@@ -745,42 +1033,86 @@ async function handleCreate() {
     <div v-show="activeTab === 'galeria'">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-xl font-semibold text-default">Galeria wizualizacji</h2>
-          <p class="text-sm text-muted mt-0.5">Zdjęcia zostaną przesłane po kliknięciu „Zapisz plan".</p>
+          <h2 class="text-xl font-semibold text-default">
+            Galeria wizualizacji
+          </h2>
+          <p class="text-sm text-muted mt-0.5">
+            Zdjęcia zostaną przesłane po kliknięciu „Zapisz plan".
+          </p>
         </div>
         <label class="cursor-pointer">
-          <input type="file" accept="image/*" multiple class="hidden" @change="handleGalleryFileChange">
-          <UButton as="span" icon="i-lucide-image-plus" size="sm">Dodaj zdjęcia</UButton>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            @change="handleGalleryFileChange"
+          >
+          <UButton
+            as="span"
+            icon="i-lucide-image-plus"
+            size="sm"
+          >Dodaj zdjęcia</UButton>
         </label>
       </div>
 
-      <div v-if="!stagedImages.length" class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center">
-        <UIcon name="i-lucide-images" class="size-12 text-muted" />
+      <div
+        v-if="!stagedImages.length"
+        class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
+      >
+        <UIcon
+          name="i-lucide-images"
+          class="size-12 text-muted"
+        />
         <div>
-          <p class="text-default font-medium">Brak zdjęć</p>
-          <p class="text-sm text-muted mt-1">Kliknij „Dodaj zdjęcia" żeby dodać wizualizacje.</p>
+          <p class="text-default font-medium">
+            Brak zdjęć
+          </p>
+          <p class="text-sm text-muted mt-1">
+            Kliknij „Dodaj zdjęcia" żeby dodać wizualizacje.
+          </p>
         </div>
       </div>
 
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        v-else
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
         <div
           v-for="(img, index) in stagedImages"
           :key="img.preview"
           class="group relative rounded-xl border border-default overflow-hidden bg-muted"
         >
           <div class="aspect-video">
-            <img :src="img.preview" :alt="img.description || 'Podgląd'" class="w-full h-full object-cover">
+            <img
+              :src="img.preview"
+              :alt="img.description || 'Podgląd'"
+              class="w-full h-full object-cover"
+            >
           </div>
           <button
             type="button"
             class="absolute top-2 right-2 size-7 rounded-full bg-red-500/85 hover:bg-red-500 text-white flex items-center justify-center shadow transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
             @click="removeStagedImage(index)"
           >
-            <UIcon name="i-lucide-x" class="size-3.5" />
+            <UIcon
+              name="i-lucide-x"
+              class="size-3.5"
+            />
           </button>
           <div class="p-3 space-y-2 border-t border-default">
-            <UInput v-model="img.description" size="xs" placeholder="Opis (opcjonalny)" />
-            <USelect v-model="img.category" :items="categoryOptions" value-key="value" label-key="label" size="xs" />
+            <UInput
+              v-model="img.description"
+              size="xs"
+              placeholder="Opis (opcjonalny)"
+            />
+            <USelect
+              v-model="img.category"
+              :items="categoryOptions"
+              value-key="value"
+              label-key="label"
+              size="xs"
+            />
           </div>
         </div>
       </div>
@@ -790,40 +1122,76 @@ async function handleCreate() {
     <div v-show="activeTab === 'pliki'">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h2 class="text-xl font-semibold text-default">Pliki dokumentacji</h2>
-          <p class="text-sm text-muted mt-0.5">Pliki zostaną przesłane po kliknięciu „Zapisz plan".</p>
+          <h2 class="text-xl font-semibold text-default">
+            Pliki dokumentacji
+          </h2>
+          <p class="text-sm text-muted mt-0.5">
+            Pliki zostaną przesłane po kliknięciu „Zapisz plan".
+          </p>
         </div>
         <label class="cursor-pointer">
-          <input type="file" multiple class="hidden" @change="handleFileChange">
-          <UButton as="span" icon="i-lucide-upload" size="sm">Wgraj pliki</UButton>
+          <input
+            type="file"
+            multiple
+            class="hidden"
+            @change="handleFileChange"
+          >
+          <UButton
+            as="span"
+            icon="i-lucide-upload"
+            size="sm"
+          >Wgraj pliki</UButton>
         </label>
       </div>
 
-      <div v-if="!stagedFiles.length" class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center">
-        <UIcon name="i-lucide-folder-open" class="size-12 text-muted" />
+      <div
+        v-if="!stagedFiles.length"
+        class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
+      >
+        <UIcon
+          name="i-lucide-folder-open"
+          class="size-12 text-muted"
+        />
         <div>
-          <p class="text-default font-medium">Brak plików</p>
-          <p class="text-sm text-muted mt-1">Kliknij „Wgraj pliki" żeby dodać pliki dokumentacji.</p>
+          <p class="text-default font-medium">
+            Brak plików
+          </p>
+          <p class="text-sm text-muted mt-1">
+            Kliknij „Wgraj pliki" żeby dodać pliki dokumentacji.
+          </p>
         </div>
       </div>
 
-      <div v-else class="flex flex-col gap-2">
+      <div
+        v-else
+        class="flex flex-col gap-2"
+      >
         <div
           v-for="(file, index) in stagedFiles"
           :key="`${file.name}-${index}`"
           class="group flex items-center gap-4 px-4 py-3 rounded-xl border border-default hover:bg-muted/50 transition-colors"
         >
-          <UIcon :name="fileIcon(file.type)" :class="['size-8 shrink-0', fileIconColor(file.type)]" />
+          <UIcon
+            :name="fileIcon(file.type)"
+            :class="['size-8 shrink-0', fileIconColor(file.type)]"
+          />
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-default truncate">{{ file.name }}</p>
-            <p class="text-xs text-muted">{{ formatFileSize(file.size) }}</p>
+            <p class="text-sm font-medium text-default truncate">
+              {{ file.name }}
+            </p>
+            <p class="text-xs text-muted">
+              {{ formatFileSize(file.size) }}
+            </p>
           </div>
           <button
             type="button"
             class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-error hover:text-error/80"
             @click="removeStagedFile(index)"
           >
-            <UIcon name="i-lucide-trash-2" class="size-4" />
+            <UIcon
+              name="i-lucide-trash-2"
+              class="size-4"
+            />
           </button>
         </div>
       </div>

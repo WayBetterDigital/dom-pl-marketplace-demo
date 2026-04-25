@@ -121,7 +121,11 @@ async function handleSave() {
 
         <div>
           <h2 class="text-xl font-semibold text-default mb-4">Opis projektu</h2>
-          <UTextarea v-model="form.description" :rows="8" />
+          <UTextarea
+            v-model="form.description"
+            :rows="8"
+            class="w-full"
+          />
         </div>
 
         <PlanSketches :plan-id="planId" />
