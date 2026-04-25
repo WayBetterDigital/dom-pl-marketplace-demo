@@ -150,7 +150,10 @@ const hasCharacteristics = computed(() => {
           </p>
         </div>
 
-        <PlanSketches :plan-id="id" />
+        <PlanSketches
+          :plan-id="id"
+          :readonly="true"
+        />
 
         <section class="flex flex-col justify-end mt-auto">
           <!-- Warianty projektu -->
