@@ -110,20 +110,6 @@ export function useVendorPlanForm() {
   const form = ref<VendorPlanForm>(emptyFormState())
   const errors = ref<Partial<Record<keyof VendorPlanForm, string>>>({})
 
-  const roofLabel = computed(() => {
-    const parts = []
-    if (form.value.roof_type) parts.push(form.value.roof_type)
-    if (form.value.roof_angle) parts.push(`${form.value.roof_angle}°`)
-    return parts.join(', ') || null
-  })
-
-  const dimensionsLabel = computed(() => {
-    if (form.value.building_width && form.value.building_length) {
-      return `${form.value.building_width} × ${form.value.building_length} m`
-    }
-    return null
-  })
-
   const validate = () => {
     const next: Partial<Record<keyof VendorPlanForm, string>> = {}
     if (!form.value.title.trim()) next.title = 'Tytuł jest wymagany'
@@ -201,8 +187,6 @@ export function useVendorPlanForm() {
   return {
     form,
     errors,
-    roofLabel,
-    dimensionsLabel,
     validate,
     toCreatePayload,
     toUpdatePayload,

@@ -99,6 +99,17 @@ const dimensionsLabel = computed(() => {
   if (buildingWidth && buildingLength) return `${buildingWidth} × ${buildingLength} m`
   return null
 })
+
+const hasCharacteristics = computed(() => {
+  const p = plan.value
+  if (!p) return false
+  return !!(
+    p.houseType || p.architecturalStyle || p.energyStandard || p.garage ||
+    p.basement || p.fireplace !== null || p.terrace !== null ||
+    roofLabel.value || dimensionsLabel.value || p.buildingHeight ||
+    p.buildingFootprint || p.totalArea
+  )
+})
 </script>
 
 <template>
@@ -139,7 +150,10 @@ const dimensionsLabel = computed(() => {
           </p>
         </div>
 
-        <PlanSketches :plan-id="id" />
+        <PlanSketches
+          :plan-id="id"
+          :readonly="true"
+        />
 
         <section class="flex flex-col justify-end mt-auto">
           <!-- Warianty projektu -->
@@ -325,7 +339,7 @@ const dimensionsLabel = computed(() => {
         </UCard>
 
         <!-- Charakterystyka budynku -->
-        <UCard>
+        <UCard v-if="hasCharacteristics">
           <template #header>
             <h3 class="text-lg font-semibold">
               Charakterystyka budynku

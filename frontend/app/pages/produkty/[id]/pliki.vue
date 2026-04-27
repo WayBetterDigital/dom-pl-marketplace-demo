@@ -10,10 +10,9 @@ import {
 
 const route = useRoute()
 const id = route.params.id as string
-const toast = useToast()
 
 const housePlanService = useHousePlanService()
-const { getFiles, uploadFile, deleteFile } = useFileService()
+const { getFiles } = useFileService()
 
 const { data: plan, error } = await useAsyncData(
   `house-plan-${id}`,
@@ -24,43 +23,11 @@ if (error.value || !plan.value) {
   throw createError({ statusCode: 404, statusMessage: 'Projekt nie znaleziony', fatal: true })
 }
 
-const { data: files, refresh } = await useAsyncData(
+const { data: files } = await useAsyncData(
   `plan-files-${id}`,
   () => getFiles(id)
 )
 
-// ── Upload ─────────────────────────────────────────────────────────────────────
-const uploadingFiles = ref<{ name: string, progress: boolean }[]>([])
-
-async function handleFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const selected = Array.from(input.files ?? [])
-  input.value = ''
-  if (!selected.length) return
-
-  for (const file of selected) {
-    if (file.size > 35 * 1024 * 1024) {
-      toast.add({
-        title: 'Plik jest za duży',
-        description: `${file.name} przekracza limit 35 MB. Zmniejsz plik i spróbuj ponownie.`,
-        color: 'warning'
-      })
-      continue
-    }
-    uploadingFiles.value.push({ name: file.name, progress: true })
-    try {
-      await uploadFile(id, file)
-      toast.add({ title: 'Plik dodany', description: file.name, color: 'success' })
-    } catch {
-      toast.add({ title: 'Błąd', description: `Nie udało się wgrać ${file.name}`, color: 'error' })
-    } finally {
-      uploadingFiles.value = uploadingFiles.value.filter(f => f.name !== file.name)
-    }
-  }
-  await refresh()
-}
-
-// ── Download ───────────────────────────────────────────────────────────────────
 async function handleDownload(url: string, name: string) {
   try {
     const res = await fetch(url)
@@ -75,25 +42,6 @@ async function handleDownload(url: string, name: string) {
     window.open(url, '_blank')
   }
 }
-
-// ── Delete ─────────────────────────────────────────────────────────────────────
-const deletingId = ref<string | null>(null)
-
-async function handleDelete(fileId: string, fileName: string) {
-  if (!confirm(`Usunąć plik "${fileName}"?`)) return
-  deletingId.value = fileId
-  try {
-    await deleteFile(id, fileId)
-    await refresh()
-    toast.add({ title: 'Plik usunięty', color: 'success' })
-  } catch {
-    toast.add({ title: 'Błąd', description: 'Nie udało się usunąć pliku.', color: 'error' })
-  } finally {
-    deletingId.value = null
-  }
-}
-
-const isUploading = computed(() => uploadingFiles.value.length > 0)
 </script>
 
 <template>
@@ -111,71 +59,33 @@ const isUploading = computed(() => uploadingFiles.value.length > 0)
     </div>
 
     <!-- Tab nav -->
-    <PlanTabNav :plan-id="id" class="mb-8" />
+    <PlanTabNav
+      :plan-id="id"
+      class="mb-8"
+    />
 
-    <!-- Title + upload button -->
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-default">
-        {{ plan?.title }}
-      </h1>
-      <label class="cursor-pointer">
-        <input
-          type="file"
-          multiple
-          class="hidden"
-          @change="handleFileChange"
-        >
-        <UButton
-          as="span"
-          icon="i-lucide-upload"
-          size="sm"
-          :loading="isUploading"
-        >
-          Wgraj pliki
-        </UButton>
-      </label>
-    </div>
-
-    <!-- Uploading indicators -->
-    <div
-      v-if="uploadingFiles.length"
-      class="flex flex-col gap-2 mb-4"
-    >
-      <div
-        v-for="f in uploadingFiles"
-        :key="f.name"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl border border-default bg-muted/50 animate-pulse"
-      >
-        <UIcon
-          name="i-lucide-loader-circle"
-          class="size-5 text-muted animate-spin shrink-0"
-        />
-        <span class="text-sm text-muted truncate">Wgrywanie: {{ f.name }}</span>
-      </div>
-    </div>
+    <!-- Title -->
+    <h1 class="text-2xl font-bold text-default mb-6">
+      {{ plan?.title }}
+    </h1>
 
     <!-- Empty state -->
     <div
-      v-if="!files?.length && !isUploading"
+      v-if="!files?.length"
       class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
     >
       <UIcon
         name="i-lucide-folder-open"
         class="size-12 text-muted"
       />
-      <div>
-        <p class="text-default font-medium">
-          Brak plików
-        </p>
-        <p class="text-sm text-muted mt-1">
-          Kliknij "Wgraj pliki" żeby dodać pierwszy plik.
-        </p>
-      </div>
+      <p class="text-default font-medium">
+        Brak plików
+      </p>
     </div>
 
     <!-- File list -->
     <div
-      v-else-if="files?.length"
+      v-else
       class="flex flex-col gap-2"
     >
       <div
@@ -197,7 +107,7 @@ const isUploading = computed(() => uploadingFiles.value.length > 0)
           </p>
         </div>
 
-        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="opacity-0 group-hover:opacity-100 transition-opacity">
           <UButton
             icon="i-lucide-download"
             size="xs"
@@ -206,16 +116,6 @@ const isUploading = computed(() => uploadingFiles.value.length > 0)
             aria-label="Pobierz"
             class="cursor-pointer"
             @click="handleDownload(file.url, file.name)"
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            size="xs"
-            color="error"
-            variant="ghost"
-            :loading="deletingId === file.id"
-            aria-label="Usuń"
-            class="cursor-pointer"
-            @click="handleDelete(file.id, file.name)"
           />
         </div>
       </div>
