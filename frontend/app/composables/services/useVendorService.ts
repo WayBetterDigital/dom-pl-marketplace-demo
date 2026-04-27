@@ -31,7 +31,6 @@ export interface VendorHousePlanPayload {
   fireplace?: boolean
   terrace?: boolean
   house_type?: string
-  family_id?: string
 }
 
 export type CreateVendorHousePlanPayload = VendorHousePlanPayload
@@ -145,22 +144,6 @@ export function useVendorService() {
     return mapToAppHousePlan(response.house_plan)
   }
 
-  async function listVendorPlanFamilies(vendorId: string): Promise<{ id: string, name: string }[]> {
-    const response = await $fetch<{ plan_families: { id: string, name: string }[] }>(
-      `${baseUrl}/store/vendors/${vendorId}/plan-families`,
-      fetchOptions
-    )
-    return response.plan_families || []
-  }
-
-  async function createVendorPlanFamily(vendorId: string, name: string): Promise<{ id: string, name: string }> {
-    const response = await $fetch<{ plan_family: { id: string, name: string } }>(
-      `${baseUrl}/store/vendors/${vendorId}/plan-families`,
-      { ...authFetchOptions(), method: 'POST', body: { name } }
-    )
-    return response.plan_family
-  }
-
   async function readFileAsBase64(file: File): Promise<{ filename: string; content: string; mimeType: string }> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -216,8 +199,6 @@ export function useVendorService() {
     createVendorHousePlan,
     updateVendorHousePlan,
     deleteVendorHousePlan,
-    listVendorPlanFamilies,
-    createVendorPlanFamily,
     uploadHousePlanImages,
     deleteHousePlanImage,
   }

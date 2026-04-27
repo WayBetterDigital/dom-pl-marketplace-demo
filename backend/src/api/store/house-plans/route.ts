@@ -19,7 +19,6 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const [house_plans, count] = await housePlanService.listAndCountHousePlans(filters, {
     skip: Number(offset),
     take: Number(limit),
-    relations: ["family"],
   })
 
   if (house_plans.length > 0) {

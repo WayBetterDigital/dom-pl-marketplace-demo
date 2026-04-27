@@ -44,7 +44,6 @@ type HousePlan = {
   fireplace: boolean | null
   terrace: boolean | null
   house_type: string | null
-  family: { id: string; name: string } | null
   created_at: string
   updated_at: string
 }
@@ -128,19 +127,6 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
   })
 
   const housePlan = data?.house_plan ?? null
-
-  const { data: familyData } = useQuery({
-    queryKey: ["house-plan-family-variants", housePlan?.family?.id],
-    queryFn: () =>
-      sdk.client.fetch<{ house_plans: (HousePlan & { product_id: string | null })[] }>(
-        `/admin/house-plans?family_id=${housePlan!.family!.id}&limit=20`
-      ),
-    enabled: !!housePlan?.family?.id,
-  })
-
-  const familyVariants = (familyData?.house_plans ?? []).filter(
-    (p) => p.id !== housePlan?.id
-  )
 
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -310,9 +296,6 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
 
         <div className="pt-0 space-y-0">
           <DetailRow label="Cena" value={formatPLN(housePlan.price)} />
-          {housePlan.family && (
-            <DetailRow label="Rodzina projektów" value={housePlan.family.name} />
-          )}
           <DetailRow label="Powierzchnia użytkowa" value={`${housePlan.house_area} m²`} />
           {housePlan.boiler_room_area != null && (
             <DetailRow label="Powierzchnia kotłowni" value={`${housePlan.boiler_room_area} m²`} />
@@ -373,41 +356,6 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
           )}
         </div>
 
-        {housePlan.family && familyVariants.length > 0 && (
-          <div className="pt-4">
-            <Text size="small" leading="compact" weight="plus" className="text-ui-fg-subtle mb-2">
-              Inne warianty z rodziny „{housePlan.family.name}"
-            </Text>
-            <div className="flex flex-col mt-2">
-              {familyVariants.map((variant) => (
-                variant.product_id ? (
-                  <a
-                    key={variant.id}
-                    href={`/app/products/${variant.product_id}`}
-                    className="flex items-center justify-between py-2 border-b border-ui-border-base last:border-0 hover:bg-ui-bg-subtle-hover rounded px-1 -mx-1 transition-colors"
-                  >
-                    <Text size="small" leading="compact" className="text-ui-fg-interactive">
-                      {variant.title}
-                    </Text>
-                    <Text size="small" leading="compact" className="text-ui-fg-subtle">
-                      {formatPLN(variant.price)}
-                    </Text>
-                  </a>
-                ) : (
-                  <div
-                    key={variant.id}
-                    className="flex items-center justify-between py-2 border-b border-ui-border-base last:border-0"
-                  >
-                    <Text size="small" leading="compact">{variant.title}</Text>
-                    <Text size="small" leading="compact" className="text-ui-fg-subtle">
-                      {formatPLN(variant.price)}
-                    </Text>
-                  </div>
-                )
-              ))}
-            </div>
-          </div>
-        )}
       </Container>
 
       <GallerySection productId={product.id} />

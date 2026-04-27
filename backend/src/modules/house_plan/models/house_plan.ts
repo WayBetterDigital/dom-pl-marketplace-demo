@@ -1,5 +1,4 @@
 import { model } from "@medusajs/framework/utils"
-import PlanFamily from "./plan_family"
 
 const HousePlan = model.define("house_plan", {
   id: model.id().primaryKey(),
@@ -27,9 +26,6 @@ const HousePlan = model.define("house_plan", {
   fireplace: model.boolean().nullable(),
   terrace: model.boolean().nullable(),
   house_type: model.text().nullable(),
-  family: model.belongsTo(() => PlanFamily, {
-    mappedBy: "house_plans",
-  }).nullable(),
 })
 
 export default HousePlan

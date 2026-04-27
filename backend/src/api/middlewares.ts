@@ -79,11 +79,6 @@ export default defineMiddlewares({
       middlewares: [requireVendorOwnership],
     },
     {
-      matcher: "/store/vendors/:id/plan-families",
-      method: "POST",
-      middlewares: [requireVendorOwnership],
-    },
-    {
       matcher: "/admin/house-plans",
       method: "POST",
       middlewares: [validateAndTransformBody(CreateHousePlanSchema)],
