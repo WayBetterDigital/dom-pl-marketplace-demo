@@ -4,6 +4,7 @@ import {
 } from "@medusajs/framework/http"
 import { z } from "@medusajs/framework/zod"
 import multer from "multer"
+import { FILE_LIMITS, BODY_LIMITS } from "../lib/file-limits"
 import { CreateHousePlanSchema, UpdateHousePlanSchema } from "./admin/house-plans/validators"
 import { CreateVendorSchema, UpdateVendorSchema } from "./admin/vendors/validators"
 import {
@@ -18,7 +19,20 @@ import { VendorLoginSchema } from "./store/vendors/login/validators"
 import { VendorRegisterSchema } from "./store/vendors/register/validators"
 import { requireVendorOwnership } from "./store/vendors/requireVendorOwnership"
 
-const upload = multer({ storage: multer.memoryStorage() })
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: FILE_LIMITS.gallery },
+})
+
+const sketchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: FILE_LIMITS.sketches },
+})
+
+const planFileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: FILE_LIMITS.planFiles },
+})
 
 const HousePlanAdditionalDataSchema = z.object({
   title: z.string().min(1),
@@ -111,7 +125,7 @@ export default defineMiddlewares({
     {
       matcher: "/store/vendors/:id/house-plans/:planId/gallery",
       method: "POST",
-      bodyParser: { sizeLimit: "30mb" },
+      bodyParser: { sizeLimit: BODY_LIMITS.gallery },
       middlewares: [requireVendorOwnership, validateAndTransformBody(CreateGalleryImageSchema)],
     },
     {
@@ -124,29 +138,41 @@ export default defineMiddlewares({
       method: "DELETE",
       middlewares: [requireVendorOwnership],
     },
-    // Multipart file uploads — disable JSON body parser, use multer
+    // Multipart uploads — bodyParser disabled, multer enforces per-type size limits
     {
       matcher: "/store/house-plans/:id/files",
       method: "POST",
       bodyParser: false,
-      middlewares: [upload.single("file")],
+      middlewares: [planFileUpload.single("file")],
     },
     {
       matcher: "/store/house-plans/:id/sketches",
       method: "POST",
       bodyParser: false,
-      middlewares: [upload.single("file")],
+      middlewares: [sketchUpload.single("file")],
     },
     {
       matcher: "/store/house-plans/:id/sketches/:sketchId",
       method: "POST",
       bodyParser: false,
-      middlewares: [upload.single("file")],
+      middlewares: [sketchUpload.single("file")],
+    },
+    {
+      matcher: "/admin/products/:id/files",
+      method: "POST",
+      bodyParser: false,
+      middlewares: [planFileUpload.single("file")],
+    },
+    {
+      matcher: "/admin/house-plans/:id/files",
+      method: "POST",
+      bodyParser: false,
+      middlewares: [planFileUpload.single("file")],
     },
     {
       matcher: "/admin/products/:id/sketches",
       method: "POST",
-      bodyParser: { sizeLimit: "20mb" },
+      bodyParser: { sizeLimit: BODY_LIMITS.sketches },
     },
   ],
 })
