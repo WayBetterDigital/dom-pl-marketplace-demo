@@ -41,6 +41,22 @@ export function useFileService() {
   const baseUrl = (config.public.medusa as any).baseUrl as string
   const publishableKey = (config.public.medusa as any).publishableKey as string
 
+  async function downloadZip(planId: string, planTitle: string): Promise<void> {
+    const response = await sdk.client.fetch<globalThis.Response>(
+      `/store/house-plans/${planId}/files/zip`,
+      { headers: { accept: 'application/octet-stream' } }
+    )
+    const blob = await (response as unknown as globalThis.Response).blob()
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${planTitle}.zip`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  }
+
   async function getFiles(planId: string): Promise<HousePlanFile[]> {
     const response = await sdk.client.fetch<{ files: HousePlanFile[] }>(
       `/store/house-plans/${planId}/files`
@@ -74,5 +90,5 @@ export function useFileService() {
     )
   }
 
-  return { getFiles, uploadFile, deleteFile }
+  return { getFiles, uploadFile, deleteFile, downloadZip }
 }

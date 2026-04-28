@@ -15,7 +15,7 @@ const vendorId = route.query.vendorId as string
 const toast = useToast()
 
 const housePlanService = useHousePlanService()
-const { getFiles, uploadFile, deleteFile } = useFileService()
+const { getFiles, uploadFile, deleteFile, downloadZip } = useFileService()
 
 const { data: plan, error } = await useAsyncData(
   `house-plan-${id}`,
@@ -33,7 +33,17 @@ const { data: files, refresh } = await useAsyncData(
 
 const uploadingFiles = ref<{ name: string, progress: boolean }[]>([])
 const deletingId = ref<string | null>(null)
+const downloadingZip = ref(false)
 const isUploading = computed(() => uploadingFiles.value.length > 0)
+
+async function handleDownloadZip() {
+  downloadingZip.value = true
+  try {
+    await downloadZip(id, plan.value?.title ?? id)
+  } finally {
+    downloadingZip.value = false
+  }
+}
 
 async function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
@@ -103,11 +113,27 @@ async function handleDelete(fileId: string, fileName: string) {
     <VendorPlanTabNav :plan-id="id" :vendor-id="vendorId" class="mb-8" />
 
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-default">{{ plan?.title }}</h1>
-      <label class="cursor-pointer">
-        <input type="file" multiple class="hidden" @change="handleFileChange">
-        <UButton as="span" icon="i-lucide-upload" size="sm" :loading="isUploading">Wgraj pliki</UButton>
-      </label>
+      <h1 class="text-2xl font-bold text-default">
+        {{ plan?.title }}
+      </h1>
+      <div class="flex items-center gap-2">
+        <UButton
+          v-if="files?.length"
+          icon="i-lucide-archive"
+          size="sm"
+          variant="outline"
+          :loading="downloadingZip"
+          :disabled="downloadingZip"
+          class="cursor-pointer"
+          @click="handleDownloadZip"
+        >
+          Pobierz wszystko (.zip)
+        </UButton>
+        <label class="cursor-pointer">
+          <input type="file" multiple class="hidden" @change="handleFileChange">
+          <UButton as="span" icon="i-lucide-upload" size="sm" :loading="isUploading">Wgraj pliki</UButton>
+        </label>
+      </div>
     </div>
 
     <div v-if="uploadingFiles.length" class="flex flex-col gap-2 mb-4">
