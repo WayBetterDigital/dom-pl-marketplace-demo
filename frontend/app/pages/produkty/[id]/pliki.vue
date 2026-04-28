@@ -2,10 +2,12 @@
 import { useRoute, useAsyncData, createError } from '#imports'
 import { useHousePlanService } from '~/composables/services/useHousePlanService'
 import { useAuthService } from '~/composables/services/useAuthService'
+import { useVendorAuthService } from '~/composables/services/useVendorAuthService'
 import {
   useCustomerDownloadService
 } from '~/composables/services/useCustomerDownloadService'
 import {
+  useFileService,
   formatFileSize,
   fileIcon,
   fileIconColor
@@ -16,7 +18,9 @@ const id = route.params.id as string
 
 const housePlanService = useHousePlanService()
 const { customer, getSession } = useAuthService()
-const { getPurchasedFiles, downloadZip } = useCustomerDownloadService()
+const { vendor, restoreSession: restoreVendorSession } = useVendorAuthService()
+const { getPurchasedFiles, downloadZip: downloadZipAsCustomer } = useCustomerDownloadService()
+const { getFiles, downloadZip: downloadZipAsVendor } = useFileService()
 
 const { data: plan, error } = await useAsyncData(
   `house-plan-${id}`,
@@ -27,36 +31,53 @@ if (error.value || !plan.value) {
   throw createError({ statusCode: 404, statusMessage: 'Projekt nie znaleziony', fatal: true })
 }
 
-// Client-only: check session then check purchase
-const { data: purchasedData, pending } = await useAsyncData(
-  `purchased-files-${id}`,
+// Client-only: check vendor session, then customer session, then purchase
+const { data: accessData, pending } = await useAsyncData(
+  `plan-access-${id}`,
   async () => {
-    if (!customer.value) {
-      await getSession()
+    // Vendor check first (JWT from localStorage)
+    if (!vendor.value) restoreVendorSession()
+    if (vendor.value) {
+      const files = await getFiles(id)
+      return { type: 'vendor' as const, files, plan_title: plan.value!.title }
     }
-    if (!customer.value) return null
-    return getPurchasedFiles(id)
+
+    // Customer + purchase check
+    if (!customer.value) await getSession()
+    if (!customer.value) return { type: 'logged_out' as const }
+
+    const purchased = await getPurchasedFiles(id)
+    if (!purchased) return { type: 'not_purchased' as const }
+    return { type: 'purchased' as const, ...purchased }
   },
   { server: false }
 )
 
-type PageState = 'loading' | 'logged_out' | 'not_purchased' | 'purchased'
+type PageState = 'loading' | 'logged_out' | 'not_purchased' | 'vendor' | 'purchased'
 
 const pageState = computed<PageState>(() => {
   if (pending.value) return 'loading'
-  if (!customer.value) return 'logged_out'
-  if (!purchasedData.value) return 'not_purchased'
-  return 'purchased'
+  return (accessData.value?.type ?? 'logged_out') as PageState
 })
 
-const files = computed(() => purchasedData.value?.files ?? [])
-const planTitle = computed(() => purchasedData.value?.plan_title ?? plan.value?.title ?? '')
+const files = computed(() =>
+  (accessData.value && 'files' in accessData.value ? accessData.value.files : []) ?? []
+)
+const planTitle = computed(() =>
+  (accessData.value && 'plan_title' in accessData.value
+    ? accessData.value.plan_title
+    : plan.value?.title) ?? ''
+)
 
 const downloadingZip = ref(false)
 async function handleDownloadZip() {
   downloadingZip.value = true
   try {
-    await downloadZip(id, planTitle.value)
+    if (pageState.value === 'vendor') {
+      await downloadZipAsVendor(id, planTitle.value)
+    } else {
+      await downloadZipAsCustomer(id, planTitle.value)
+    }
   } finally {
     downloadingZip.value = false
   }
