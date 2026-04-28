@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useCustomerService } from '~/composables/services/useCustomerService'
 import { useAuthService } from '~/composables/services/useAuthService'
+import { useCustomerDownloadService } from '~/composables/services/useCustomerDownloadService'
 import type { AppOrder } from '~/types/order'
 
 definePageMeta({ middleware: 'auth' })
@@ -54,6 +55,18 @@ const statusColor = (status: string) => {
 }
 
 const backUrl = '/konto/klient'
+
+const { downloadZip } = useCustomerDownloadService()
+const downloadingPlanId = ref<string | null>(null)
+
+async function handleDownloadZip(planId: string, planTitle: string) {
+  downloadingPlanId.value = planId
+  try {
+    await downloadZip(planId, planTitle)
+  } finally {
+    downloadingPlanId.value = null
+  }
+}
 </script>
 
 <template>
@@ -159,16 +172,30 @@ const backUrl = '/konto/klient'
                 Ilość: {{ item.quantity }}
               </p>
             </div>
-            <div class="text-right shrink-0">
-              <p class="font-semibold text-default">
-                {{ formatPLN(Number(item.unit_price) * Number(item.quantity)) }}
-              </p>
-              <p
-                v-if="Number(item.quantity) > 1"
-                class="text-xs text-muted"
+            <div class="flex flex-col items-end gap-2 shrink-0">
+              <div class="text-right">
+                <p class="font-semibold text-default">
+                  {{ formatPLN(Number(item.unit_price) * Number(item.quantity)) }}
+                </p>
+                <p
+                  v-if="Number(item.quantity) > 1"
+                  class="text-xs text-muted"
+                >
+                  {{ formatPLN(Number(item.unit_price)) }} / szt.
+                </p>
+              </div>
+              <UButton
+                v-if="item.house_plan_id"
+                icon="i-lucide-archive"
+                size="xs"
+                variant="outline"
+                :loading="downloadingPlanId === item.house_plan_id"
+                :disabled="downloadingPlanId !== null"
+                class="cursor-pointer"
+                @click="handleDownloadZip(item.house_plan_id, item.title)"
               >
-                {{ formatPLN(Number(item.unit_price)) }} / szt.
-              </p>
+                Pobierz pliki (.zip)
+              </UButton>
             </div>
           </div>
         </div>
