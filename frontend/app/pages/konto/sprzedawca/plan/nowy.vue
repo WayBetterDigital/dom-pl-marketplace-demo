@@ -1,41 +1,60 @@
 <script setup lang="ts">
 import { useVendorService } from '~/composables/services/useVendorService'
 import { useVendorPlanForm } from '~/composables/useVendorPlanForm'
-import { useGalleryService, GALLERY_CATEGORIES } from '~/composables/services/useGalleryService'
-import { useFileService, formatFileSize, fileIcon, fileIconColor } from '~/composables/services/useFileService'
-import { useSketchService, FLOOR_OPTIONS, TYPE_OPTIONS, floorLabel } from '~/composables/services/useSketchService'
+import {
+  useGalleryService,
+  GALLERY_CATEGORIES
+} from '~/composables/services/useGalleryService'
+import {
+  useFileService,
+  formatFileSize,
+  fileIcon,
+  fileIconColor
+} from '~/composables/services/useFileService'
+import {
+  useSketchService,
+  FLOOR_OPTIONS,
+  TYPE_OPTIONS,
+  floorLabel
+} from '~/composables/services/useSketchService'
 import type { GalleryCategory } from '~/composables/services/useGalleryService'
 import type { SketchType } from '~/composables/services/useSketchService'
-import type { AppHousePlan } from '~/types/house-plan'
 
-definePageMeta({ middleware: 'vendor-auth' })
+definePageMeta({ middleware: ['vendor-auth'] })
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const vendorId = route.query.vendorId as string
 
-const { createVendorHousePlan, uploadHousePlanImages, listVendorPlanFamilies, getVendorHousePlans } = useVendorService()
+const { createVendorHousePlan, uploadHousePlanImages } = useVendorService()
 const { uploadGalleryImage } = useGalleryService()
 const { uploadFile } = useFileService()
 const { createSketch } = useSketchService()
 
-const { form, errors, validate, toCreatePayload, applyPrefillToEmptyFields } = useVendorPlanForm()
+const { form, errors, validate, toCreatePayload } = useVendorPlanForm()
 
 const activeTab = ref<'dane' | 'galeria' | 'pliki'>('dane')
 const creating = ref(false)
-const families = ref<Array<{ id: string, name: string }>>([])
-const sourcePlanId = ref('')
-const vendorPlans = ref<AppHousePlan[]>([])
 
 const mainImages = ref<File[]>([])
 const mainPreviews = ref<string[]>([])
 
-type StagedImage = { file: File, preview: string, description: string, category: GalleryCategory }
+type StagedImage = {
+  file: File
+  preview: string
+  description: string
+  category: GalleryCategory
+};
 const stagedImages = ref<StagedImage[]>([])
 const stagedFiles = ref<File[]>([])
 
-type StagedSketch = { file: File, preview: string, floor: number, type: SketchType }
+type StagedSketch = {
+  file: File
+  preview: string
+  floor: number
+  type: SketchType
+}
 const stagedSketches = ref<StagedSketch[]>([])
 
 const sketchModalOpen = ref(false)
@@ -45,22 +64,31 @@ const sketchFormFloor = ref('0')
 const sketchFormType = ref('0')
 
 const stagedSketchesByFloor = computed(() => {
-  const floors = [...new Set(stagedSketches.value.map(s => s.floor))].sort((a, b) => a - b)
-  return floors.map(floor => ({
+  const floors = [...new Set(stagedSketches.value.map((s) => s.floor))].sort(
+    (a, b) => a - b
+  );
+  return floors.map((floor) => ({
     floor,
     label: floorLabel(floor),
-    base: stagedSketches.value.find(s => s.floor === floor && s.type === 0) ?? null,
-    withLabels: stagedSketches.value.find(s => s.floor === floor && s.type === 1) ?? null
+    base:
+      stagedSketches.value.find((s) => s.floor === floor && s.type === 0) ??
+      null,
+    withLabels:
+      stagedSketches.value.find((s) => s.floor === floor && s.type === 1) ??
+      null
   }))
 })
 
-const showLabels = reactive<Record<number, boolean>>({})
+const showLabels = reactive<Record<number, boolean>>({});
 
 function toggleStagedLabels(floor: number) {
   showLabels[floor] = !showLabels[floor]
 }
 
-type SketchGroup = { base: StagedSketch | null, withLabels: StagedSketch | null }
+type SketchGroup = {
+  base: StagedSketch | null
+  withLabels: StagedSketch | null
+};
 
 function activeStagedPreview(floor: number, group: SketchGroup): string {
   if (showLabels[floor] && group.withLabels) return group.withLabels.preview
@@ -68,165 +96,152 @@ function activeStagedPreview(floor: number, group: SketchGroup): string {
 }
 
 function activeStagedType(floor: number, group: SketchGroup): SketchType {
-  return (showLabels[floor] && group.withLabels) ? 1 : (group.base ? 0 : 1)
+  return showLabels[floor] && group.withLabels ? 1 : group.base ? 0 : 1
 }
 
 function openSketchModal() {
   sketchFormFile.value = null
   sketchFormPreview.value = null
-  sketchFormFloor.value = '0'
-  sketchFormType.value = '0'
+  sketchFormFloor.value = "0"
+  sketchFormType.value = "0"
   sketchModalOpen.value = true
 }
 
 function handleSketchFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  sketchFormFile.value = file
-  if (sketchFormPreview.value) URL.revokeObjectURL(sketchFormPreview.value)
-  sketchFormPreview.value = URL.createObjectURL(file)
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  sketchFormFile.value = file;
+  if (sketchFormPreview.value) URL.revokeObjectURL(sketchFormPreview.value);
+  sketchFormPreview.value = URL.createObjectURL(file);
 }
 
 function addStagedSketch() {
-  if (!sketchFormFile.value) return
-  const floor = Number(sketchFormFloor.value)
-  const type = Number(sketchFormType.value) as SketchType
-  const existingIdx = stagedSketches.value.findIndex(s => s.floor === floor && s.type === type)
+  if (!sketchFormFile.value) return;
+  const floor = Number(sketchFormFloor.value);
+  const type = Number(sketchFormType.value) as SketchType;
+  const existingIdx = stagedSketches.value.findIndex(
+    (s) => s.floor === floor && s.type === type,
+  );
   if (existingIdx !== -1) {
-    URL.revokeObjectURL(stagedSketches.value[existingIdx]!.preview)
-    stagedSketches.value.splice(existingIdx, 1)
+    URL.revokeObjectURL(stagedSketches.value[existingIdx]!.preview);
+    stagedSketches.value.splice(existingIdx, 1);
   }
   stagedSketches.value.push({
     file: sketchFormFile.value,
     preview: sketchFormPreview.value!,
     floor,
-    type
-  })
-  sketchModalOpen.value = false
-  sketchFormFile.value = null
-  sketchFormPreview.value = null
+    type,
+  });
+  sketchModalOpen.value = false;
+  sketchFormFile.value = null;
+  sketchFormPreview.value = null;
 }
 
 function removeStagedSketch(floor: number, type: SketchType) {
-  const idx = stagedSketches.value.findIndex(s => s.floor === floor && s.type === type)
-  if (idx === -1) return
-  URL.revokeObjectURL(stagedSketches.value[idx]!.preview)
-  stagedSketches.value.splice(idx, 1)
+  const idx = stagedSketches.value.findIndex(
+    (s) => s.floor === floor && s.type === type,
+  );
+  if (idx === -1) return;
+  URL.revokeObjectURL(stagedSketches.value[idx]!.preview);
+  stagedSketches.value.splice(idx, 1);
 }
 
 const CATEGORY_LABELS: Record<GalleryCategory, string> = {
-  wizualizacje: 'Wizualizacje',
-  strefa_dzienna: 'Strefa dzienna',
-  kuchnia: 'Kuchnia',
-  lazienka: 'Łazienka'
-}
-const categoryOptions = GALLERY_CATEGORIES.map(c => ({ label: CATEGORY_LABELS[c], value: c }))
-
-const familyOptions = computed(() => [
-  { label: 'Brak rodziny', value: 'none' },
-  ...families.value.map(f => ({ label: f.name, value: f.id }))
-])
-
-const currentFamilyPlans = computed(() =>
-  vendorPlans.value.filter(plan => plan.family?.id === form.value.family_id)
-)
-
-const sourcePlanOptions = computed(() =>
-  currentFamilyPlans.value.map(plan => ({
-    label: `${plan.title} (${new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(plan.price)})`,
-    value: plan.id
-  }))
-)
-
-watch(() => form.value.family_id, () => {
-  sourcePlanId.value = ''
-})
-
-watch(sourcePlanId, (id) => {
-  if (!id) return
-  const source = currentFamilyPlans.value.find(p => p.id === id)
-  if (!source) return
-  applyPrefillToEmptyFields(source)
-  toast.add({ title: 'Pola uzupełnione', description: 'Puste pola zostały uzupełnione z wybranego planu źródłowego.', color: 'success' })
-})
-
-onMounted(async () => {
-  if (!vendorId) return
-  try {
-    const [familyList, plans] = await Promise.all([listVendorPlanFamilies(vendorId), getVendorHousePlans(vendorId)])
-    families.value = familyList
-    vendorPlans.value = plans
-  } catch {
-    families.value = []
-    vendorPlans.value = []
-  }
-})
+  wizualizacje: "Wizualizacje",
+  strefa_dzienna: "Strefa dzienna",
+  kuchnia: "Kuchnia",
+  lazienka: "Łazienka",
+};
+const categoryOptions = GALLERY_CATEGORIES.map((c) => ({
+  label: CATEGORY_LABELS[c],
+  value: c,
+}));
 
 function handleMainImageSelect(e: Event) {
-  const input = e.target as HTMLInputElement
-  const files = Array.from(input.files ?? [])
-  input.value = ''
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
   for (const file of files) {
     if (file.size > 10 * 1024 * 1024) {
-      toast.add({ title: 'Plik za duży', description: `${file.name} przekracza 10 MB.`, color: 'warning' })
-      continue
+      toast.add({
+        title: "Plik za duży",
+        description: `${file.name} przekracza 10 MB.`,
+        color: "warning",
+      });
+      continue;
     }
-    mainImages.value.push(file)
-    mainPreviews.value.push(URL.createObjectURL(file))
+    mainImages.value.push(file);
+    mainPreviews.value.push(URL.createObjectURL(file));
   }
 }
 
 function removeMainImage(index: number) {
-  URL.revokeObjectURL(mainPreviews.value[index]!)
-  mainImages.value.splice(index, 1)
-  mainPreviews.value.splice(index, 1)
+  URL.revokeObjectURL(mainPreviews.value[index]!);
+  mainImages.value.splice(index, 1);
+  mainPreviews.value.splice(index, 1);
 }
 
 function handleGalleryFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const files = Array.from(input.files ?? [])
-  input.value = ''
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
   for (const file of files) {
     if (file.size > 10 * 1024 * 1024) {
-      toast.add({ title: 'Plik za duży', description: `${file.name} przekracza 10 MB.`, color: 'warning' })
-      continue
+      toast.add({
+        title: "Plik za duży",
+        description: `${file.name} przekracza 10 MB.`,
+        color: "warning",
+      });
+      continue;
     }
-    stagedImages.value.push({ file, preview: URL.createObjectURL(file), description: '', category: 'wizualizacje' })
+    stagedImages.value.push({
+      file,
+      preview: URL.createObjectURL(file),
+      description: "",
+      category: "wizualizacje",
+    });
   }
 }
 
 function removeStagedImage(index: number) {
-  URL.revokeObjectURL(stagedImages.value[index]!.preview)
-  stagedImages.value.splice(index, 1)
+  URL.revokeObjectURL(stagedImages.value[index]!.preview);
+  stagedImages.value.splice(index, 1);
 }
 
 function handleFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const files = Array.from(input.files ?? [])
-  input.value = ''
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
   for (const file of files) {
     if (file.size > 35 * 1024 * 1024) {
-      toast.add({ title: 'Plik za duży', description: `${file.name} przekracza 35 MB.`, color: 'warning' })
-      continue
+      toast.add({
+        title: "Plik za duży",
+        description: `${file.name} przekracza 35 MB.`,
+        color: "warning",
+      });
+      continue;
     }
-    stagedFiles.value.push(file)
+    stagedFiles.value.push(file);
   }
 }
 
 function removeStagedFile(index: number) {
-  stagedFiles.value.splice(index, 1)
+  stagedFiles.value.splice(index, 1);
 }
 
 async function handleCreate() {
   if (!vendorId) {
-    toast.add({ title: 'Brak vendorId', color: 'error' })
-    return
+    toast.add({ title: "Brak vendorId", color: "error" });
+    return;
   }
   if (!validate()) {
-    activeTab.value = 'dane'
-    toast.add({ title: 'Uzupełnij wymagane pola w zakładce Dane projektu', color: 'warning' })
-    return
+    activeTab.value = "dane";
+    toast.add({
+      title: "Uzupełnij wymagane pola w zakładce Dane projektu",
+      color: "warning",
+    });
+    return;
   }
   creating.value = true
   let createdId: string | null = null
@@ -234,7 +249,11 @@ async function handleCreate() {
     const created = await createVendorHousePlan(vendorId, toCreatePayload())
     createdId = created.id
   } catch {
-    toast.add({ title: 'Błąd', description: 'Nie udało się utworzyć planu.', color: 'error' })
+    toast.add({
+      title: 'Błąd',
+      description: 'Nie udało się utworzyć planu.',
+      color: 'error'
+    })
     creating.value = false
     return
   }
@@ -242,30 +261,56 @@ async function handleCreate() {
   // Uploady są niekrytyczne — błąd nie blokuje przejścia do edycji
   if (mainImages.value.length) {
     try {
-      await uploadHousePlanImages(vendorId, createdId, mainImages.value)
+      await uploadHousePlanImages(vendorId, createdId, mainImages.value);
     } catch {
-      toast.add({ title: 'Ostrzeżenie', description: 'Nie udało się wgrać zdjęć głównych.', color: 'warning' })
+      toast.add({
+        title: 'Ostrzeżenie',
+        description: 'Nie udało się wgrać zdjęć głównych.',
+        color: 'warning'
+      })
     }
   }
   for (const img of stagedImages.value) {
     try {
-      await uploadGalleryImage(vendorId, createdId, img.file, img.description || undefined, img.category)
+      await uploadGalleryImage(
+        vendorId,
+        createdId,
+        img.file,
+        img.description || undefined,
+        img.category
+      )
     } catch {
-      toast.add({ title: 'Ostrzeżenie', description: `Nie udało się wgrać ${img.file.name}.`, color: 'warning' })
+      toast.add({
+        title: 'Ostrzeżenie',
+        description: `Nie udało się wgrać ${img.file.name}.`,
+        color: 'warning'
+      })
     }
   }
   for (const file of stagedFiles.value) {
     try {
       await uploadFile(createdId, file)
     } catch {
-      toast.add({ title: 'Ostrzeżenie', description: `Nie udało się wgrać ${file.name}.`, color: 'warning' })
+      toast.add({
+        title: 'Ostrzeżenie',
+        description: `Nie udało się wgrać ${file.name}.`,
+        color: 'warning'
+      })
     }
   }
   for (const sketch of stagedSketches.value) {
     try {
-      await createSketch(createdId, { file: sketch.file, floor: sketch.floor, type: sketch.type })
+      await createSketch(createdId, {
+        file: sketch.file,
+        floor: sketch.floor,
+        type: sketch.type
+      });
     } catch {
-      toast.add({ title: 'Ostrzeżenie', description: `Nie udało się wgrać rzutu: ${sketch.file.name}.`, color: 'warning' })
+      toast.add({
+        title: 'Ostrzeżenie',
+        description: `Nie udało się wgrać rzutu: ${sketch.file.name}.`,
+        color: 'warning'
+      })
     }
   }
 
@@ -303,7 +348,9 @@ async function handleCreate() {
           type="button"
           :class="[
             'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer',
-            activeTab === 'dane' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default'
+            activeTab === 'dane'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted hover:text-default hover:border-default',
           ]"
           @click="activeTab = 'dane'"
         >
@@ -313,7 +360,9 @@ async function handleCreate() {
           type="button"
           :class="[
             'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer',
-            activeTab === 'galeria' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default'
+            activeTab === 'galeria'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted hover:text-default hover:border-default',
           ]"
           @click="activeTab = 'galeria'"
         >
@@ -329,7 +378,9 @@ async function handleCreate() {
           type="button"
           :class="[
             'px-5 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer',
-            activeTab === 'pliki' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-default hover:border-default'
+            activeTab === 'pliki'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted hover:text-default hover:border-default',
           ]"
           @click="activeTab = 'pliki'"
         >
@@ -358,23 +409,24 @@ async function handleCreate() {
             multiple
             class="hidden"
             @change="handleMainImageSelect"
+          />
+          <div
+            class="relative aspect-video rounded-xl border-2 border-dashed border-default overflow-hidden bg-muted/20 group"
           >
-          <div class="relative aspect-video rounded-xl border-2 border-dashed border-default overflow-hidden bg-muted/20 group">
             <img
               v-if="mainPreviews.length"
               :src="mainPreviews[0]"
               alt=""
               class="w-full h-full object-cover"
-            >
+            />
             <div
               v-else
               class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted pointer-events-none"
             >
-              <UIcon
-                name="i-lucide-image-plus"
-                class="size-12"
-              />
-              <span class="text-sm font-medium">Kliknij, aby dodać zdjęcia</span>
+              <UIcon name="i-lucide-image-plus" class="size-12" />
+              <span class="text-sm font-medium">
+                Kliknij, aby dodać zdjęcia
+              </span>
               <span class="text-xs">JPG, PNG, WebP · maks. 10 MB</span>
             </div>
             <div
@@ -389,29 +441,19 @@ async function handleCreate() {
           </div>
         </label>
 
-        <div
-          v-if="mainPreviews.length"
-          class="flex gap-2 overflow-x-auto pb-1"
-        >
+        <div v-if="mainPreviews.length" class="flex gap-2 overflow-x-auto pb-1">
           <div
             v-for="(src, i) in mainPreviews"
             :key="src"
             class="relative shrink-0 w-20 h-16 rounded-lg overflow-hidden border border-default group/thumb"
           >
-            <img
-              :src="src"
-              alt=""
-              class="w-full h-full object-cover"
-            >
+            <img :src="src" alt="" class="w-full h-full object-cover" />
             <button
               type="button"
               class="absolute inset-0 bg-black/50 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center"
               @click.prevent="removeMainImage(i)"
             >
-              <UIcon
-                name="i-lucide-x"
-                class="size-4 text-white"
-              />
+              <UIcon name="i-lucide-x" class="size-4 text-white" />
             </button>
           </div>
         </div>
@@ -464,19 +506,28 @@ async function handleCreate() {
             <h3 class="text-base font-medium text-muted">
               {{ group.label }}
             </h3>
-            <div class="relative aspect-video w-full rounded-xl overflow-hidden border border-default">
+            <div
+              class="relative aspect-video w-full rounded-xl overflow-hidden border border-default"
+            >
               <img
                 :src="activeStagedPreview(group.floor, group)"
                 :alt="group.label"
                 class="w-full h-full object-contain transition-transform duration-300"
-              >
+              />
               <div class="absolute inset-0 group">
-                <div class="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  class="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <button
                     type="button"
                     title="Usuń widoczny szkic"
                     class="size-7 rounded-full bg-red-500/85 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer shadow transition-colors"
-                    @click="removeStagedSketch(group.floor, activeStagedType(group.floor, group))"
+                    @click="
+                      removeStagedSketch(
+                        group.floor,
+                        activeStagedType(group.floor, group)
+                      )
+                    "
                   >
                     <UIcon
                       name="i-lucide-trash-2"
@@ -489,19 +540,20 @@ async function handleCreate() {
                 <button
                   v-if="group.withLabels && group.base"
                   type="button"
-                  :aria-label="showLabels[group.floor] ? 'Ukryj opisy pomieszczeń' : 'Pokaż opisy pomieszczeń'"
+                  :aria-label="
+                    showLabels[group.floor]
+                      ? 'Ukryj opisy pomieszczeń'
+                      : 'Pokaż opisy pomieszczeń'
+                  "
                   :class="[
                     'size-9 rounded-full shadow flex items-center justify-center transition-all cursor-pointer',
                     showLabels[group.floor]
                       ? 'bg-primary text-white opacity-100'
-                      : 'bg-white/85 text-gray-800 opacity-70 hover:opacity-100'
+                      : 'bg-white/85 text-gray-800 opacity-70 hover:opacity-100',
                   ]"
                   @click="toggleStagedLabels(group.floor)"
                 >
-                  <UIcon
-                    name="i-lucide-tag"
-                    class="size-5"
-                  />
+                  <UIcon name="i-lucide-tag" class="size-5" />
                 </button>
               </div>
             </div>
@@ -523,28 +575,36 @@ async function handleCreate() {
                   :src="sketchFormPreview"
                   alt=""
                   class="w-full h-full object-contain"
-                >
+                />
               </div>
               <div class="space-y-1">
-                <label class="text-sm font-medium text-default">Plik szkicu *</label>
+                <label class="text-sm font-medium text-default"
+                  >Plik szkicu *</label
+                >
                 <label class="cursor-pointer block">
                   <input
                     type="file"
                     accept="image/*"
                     class="hidden"
                     @change="handleSketchFileChange"
+                  />
+                  <div
+                    class="flex items-center gap-2 border border-dashed border-default rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors"
                   >
-                  <div class="flex items-center gap-2 border border-dashed border-default rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors">
                     <UIcon
                       name="i-lucide-image-plus"
                       class="size-5 text-muted shrink-0"
                     />
-                    <span class="text-sm text-muted">{{ sketchFormFile ? sketchFormFile.name : 'Wybierz plik...' }}</span>
+                    <span class="text-sm text-muted">{{
+                      sketchFormFile ? sketchFormFile.name : "Wybierz plik..."
+                    }}</span>
                   </div>
                 </label>
               </div>
               <div class="space-y-1">
-                <label class="text-sm font-medium text-default">Kondygnacja</label>
+                <label class="text-sm font-medium text-default">
+                  Kondygnacja
+                </label>
                 <USelect
                   v-model="sketchFormFloor"
                   :items="FLOOR_OPTIONS"
@@ -571,10 +631,7 @@ async function handleCreate() {
             >
               Anuluj
             </UButton>
-            <UButton
-              :disabled="!sketchFormFile"
-              @click="addStagedSketch"
-            >
+            <UButton :disabled="!sketchFormFile" @click="addStagedSketch">
               Dodaj
             </UButton>
           </template>
@@ -589,41 +646,10 @@ async function handleCreate() {
             type="text"
             placeholder="Nazwa projektu..."
             class="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted/40 text-default mb-1 leading-tight"
-          >
-          <p
-            v-if="errors.title"
-            class="text-xs text-error mb-2"
-          >
+          />
+          <p v-if="errors.title" class="text-xs text-error mb-2">
             {{ errors.title }}
           </p>
-
-          <div
-            v-if="families.length"
-            class="flex items-center gap-2 mb-3"
-          >
-            <UIcon
-              name="i-lucide-layers-2"
-              class="size-4 text-muted shrink-0"
-            />
-            <USelect
-              v-model="form.family_id"
-              :items="familyOptions"
-              value-key="value"
-              label-key="label"
-              size="xs"
-              class="w-52"
-            />
-            <USelect
-              v-if="form.family_id !== 'none'"
-              v-model="sourcePlanId"
-              :items="sourcePlanOptions"
-              value-key="value"
-              label-key="label"
-              size="xs"
-              class="w-52"
-              placeholder="Seed z planu..."
-            />
-          </div>
 
           <div class="flex items-baseline gap-2">
             <input
@@ -631,13 +657,10 @@ async function handleCreate() {
               type="number"
               placeholder="0"
               class="text-3xl font-bold text-primary bg-transparent border-none outline-none placeholder:text-primary/30 w-36 leading-tight"
-            >
+            />
             <span class="text-3xl font-bold text-primary">zł</span>
           </div>
-          <p
-            v-if="errors.price"
-            class="text-xs text-error mt-1"
-          >
+          <p v-if="errors.price" class="text-xs text-error mt-1">
             {{ errors.price }}
           </p>
         </div>
@@ -650,13 +673,14 @@ async function handleCreate() {
           </template>
 
           <div class="space-y-0">
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-maximize"
-                  class="size-5 shrink-0"
-                />
-                <span class="text-sm">Powierzchnia użytkowa <span class="text-error">*</span></span>
+                <UIcon name="i-lucide-maximize" class="size-5 shrink-0" />
+                <span class="text-sm">
+                  Powierzchnia użytkowa <span class="text-error">*</span>
+                </span>
               </div>
               <div class="flex items-center gap-1.5">
                 <UInput
@@ -670,12 +694,11 @@ async function handleCreate() {
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-thermometer"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-thermometer" class="size-5 shrink-0" />
                 <span class="text-sm">Powierzchnia kotłowni</span>
               </div>
               <div class="flex items-center gap-1.5">
@@ -689,13 +712,14 @@ async function handleCreate() {
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-door-open"
-                  class="size-5 shrink-0"
-                />
-                <span class="text-sm">Liczba pokoi <span class="text-error">*</span></span>
+                <UIcon name="i-lucide-door-open" class="size-5 shrink-0" />
+                <span class="text-sm">
+                  Liczba pokoi <span class="text-error">*</span>
+                </span>
               </div>
               <UInput
                 v-model="form.rooms"
@@ -706,12 +730,11 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-layers"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-layers" class="size-5 shrink-0" />
                 <span class="text-sm">Liczba kondygnacji</span>
               </div>
               <UInput
@@ -722,13 +745,14 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-bath"
-                  class="size-5 shrink-0"
-                />
-                <span class="text-sm">Łazienki i WC <span class="text-error">*</span></span>
+                <UIcon name="i-lucide-bath" class="size-5 shrink-0" />
+                <span class="text-sm">
+                  Łazienki i WC<span class="text-error">*</span>
+                </span>
               </div>
               <UInput
                 v-model="form.bathrooms_and_wc"
@@ -739,13 +763,14 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-ruler"
-                  class="size-5 shrink-0"
-                />
-                <span class="text-sm">Min. wymiary działki <span class="text-error">*</span></span>
+                <UIcon name="i-lucide-ruler" class="size-5 shrink-0" />
+                <span class="text-sm">
+                  Min. wymiary działki <span class="text-error">*</span>
+                </span>
               </div>
               <UInput
                 v-model="form.plot_dimensions"
@@ -755,7 +780,9 @@ async function handleCreate() {
                 placeholder="np. 20×30"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
                 <UIcon
                   name="i-lucide-ruler"
@@ -787,17 +814,20 @@ async function handleCreate() {
           </template>
 
           <div class="space-y-0">
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-home"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-home" class="size-5 shrink-0" />
                 <span class="text-sm">Typ domu</span>
               </div>
               <USelect
                 v-model="form.house_type"
-                :items="[{ label: 'Jednorodzinny', value: 'jednorodzinny' }, { label: 'Bliźniak', value: 'bliźniak' }, { label: 'Rekreacyjny', value: 'rekreacyjny' }]"
+                :items="[
+                  { label: 'Jednorodzinny', value: 'jednorodzinny' },
+                  { label: 'Bliźniak', value: 'bliźniak' },
+                  { label: 'Rekreacyjny', value: 'rekreacyjny' },
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -805,17 +835,21 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-pen-tool"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-pen-tool" class="size-5 shrink-0" />
                 <span class="text-sm">Styl architektoniczny</span>
               </div>
               <USelect
                 v-model="form.architectural_style"
-                :items="[{ label: 'Tradycyjny', value: 'tradycyjny' }, { label: 'Nowoczesny', value: 'nowoczesny' }, { label: 'Klasyczny', value: 'klasyczny' }, { label: 'Skandynawski', value: 'skandynawski' }]"
+                :items="[
+                  { label: 'Tradycyjny', value: 'tradycyjny' },
+                  { label: 'Nowoczesny', value: 'nowoczesny' },
+                  { label: 'Klasyczny', value: 'klasyczny' },
+                  { label: 'Skandynawski', value: 'skandynawski' },
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -823,17 +857,20 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-zap"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-zap" class="size-5 shrink-0" />
                 <span class="text-sm">Standard energetyczny</span>
               </div>
               <USelect
                 v-model="form.energy_standard"
-                :items="[{ label: 'Standard', value: 'standard' }, { label: 'Energooszczędny', value: 'energooszczędny' }, { label: 'Pasywny', value: 'pasywny' }]"
+                :items="[
+                  { label: 'Standard', value: 'standard' },
+                  { label: 'Energooszczędny', value: 'energooszczędny' },
+                  { label: 'Pasywny', value: 'pasywny' }
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -841,17 +878,21 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-car"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-car" class="size-5 shrink-0" />
                 <span class="text-sm">Garaż</span>
               </div>
               <USelect
                 v-model="form.garage"
-                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Jednostanowiskowy', value: 'jednostanowiskowy' }, { label: 'Dwustanowiskowy', value: 'dwustanowiskowy' }, { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }]"
+                :items="[
+                  { label: 'Brak', value: 'brak' },
+                  { label: 'Jednostanowiskowy', value: 'jednostanowiskowy' },
+                  { label: 'Dwustanowiskowy', value: 'dwustanowiskowy' },
+                  { label: 'Trzystanowiskowy', value: 'trzystanowiskowy' }
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -859,7 +900,9 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
                 <UIcon
                   name="i-lucide-arrow-down-to-line"
@@ -869,7 +912,11 @@ async function handleCreate() {
               </div>
               <USelect
                 v-model="form.basement"
-                :items="[{ label: 'Brak', value: 'brak' }, { label: 'Częściowa', value: 'częściowa' }, { label: 'Pełna', value: 'pełna' }]"
+                :items="[
+                  { label: 'Brak', value: 'brak' },
+                  { label: 'Częściowa', value: 'częściowa' },
+                  { label: 'Pełna', value: 'pełna' }
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -877,17 +924,19 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-flame"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-flame" class="size-5 shrink-0" />
                 <span class="text-sm">Kominek</span>
               </div>
               <USelect
                 v-model="form.fireplace"
-                :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]"
+                :items="[
+                  { label: 'Tak', value: 'tak' },
+                  { label: 'Nie', value: 'nie' }
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -895,17 +944,19 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-sun"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-sun" class="size-5 shrink-0" />
                 <span class="text-sm">Taras</span>
               </div>
               <USelect
                 v-model="form.terrace"
-                :items="[{ label: 'Tak', value: 'tak' }, { label: 'Nie', value: 'nie' }]"
+                :items="[
+                  { label: 'Tak', value: 'tak' },
+                  { label: 'Nie', value: 'nie' }
+                ]"
                 value-key="value"
                 label-key="label"
                 size="xs"
@@ -913,18 +964,23 @@ async function handleCreate() {
                 placeholder="—"
               />
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-triangle"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-triangle" class="size-5 shrink-0" />
                 <span class="text-sm">Dach</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <USelect
                   v-model="form.roof_type"
-                  :items="[{ label: 'Dwuspadowy', value: 'dwuspadowy' }, { label: 'Czterospadowy', value: 'czterospadowy' }, { label: 'Płaski', value: 'płaski' }, { label: 'Mansardowy', value: 'mansardowy' }, { label: 'Jednospadowy', value: 'jednospadowy' }]"
+                  :items="[
+                    { label: 'Dwuspadowy', value: 'dwuspadowy' },
+                    { label: 'Czterospadowy', value: 'czterospadowy' },
+                    { label: 'Płaski', value: 'płaski' },
+                    { label: 'Mansardowy', value: 'mansardowy' },
+                    { label: 'Jednospadowy', value: 'jednospadowy' }
+                  ]"
                   value-key="value"
                   label-key="label"
                   size="xs"
@@ -940,7 +996,9 @@ async function handleCreate() {
                 />
               </div>
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
                 <UIcon
                   name="i-lucide-move-horizontal"
@@ -967,12 +1025,11 @@ async function handleCreate() {
                 <span>m</span>
               </div>
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-move-vertical"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-move-vertical" class="size-5 shrink-0" />
                 <span class="text-sm">Wysokość budynku</span>
               </div>
               <div class="flex items-center gap-1.5">
@@ -986,12 +1043,11 @@ async function handleCreate() {
                 <span class="text-sm text-muted">m</span>
               </div>
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-square"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-square" class="size-5 shrink-0" />
                 <span class="text-sm">Powierzchnia zabudowy</span>
               </div>
               <div class="flex items-center gap-1.5">
@@ -1005,12 +1061,11 @@ async function handleCreate() {
                 <span class="text-sm text-muted">m²</span>
               </div>
             </div>
-            <div class="flex items-center justify-between py-2.5 border-b border-default last:border-0">
+            <div
+              class="flex items-center justify-between py-2.5 border-b border-default last:border-0"
+            >
               <div class="flex items-center gap-2 text-muted">
-                <UIcon
-                  name="i-lucide-layout"
-                  class="size-5 shrink-0"
-                />
+                <UIcon name="i-lucide-layout" class="size-5 shrink-0" />
                 <span class="text-sm">Powierzchnia całkowita</span>
               </div>
               <div class="flex items-center gap-1.5">
@@ -1047,12 +1102,14 @@ async function handleCreate() {
             multiple
             class="hidden"
             @change="handleGalleryFileChange"
-          >
+          />
           <UButton
             as="span"
             icon="i-lucide-image-plus"
             size="sm"
-          >Dodaj zdjęcia</UButton>
+          >
+            Dodaj zdjęcia
+          </UButton>
         </label>
       </div>
 
@@ -1060,10 +1117,7 @@ async function handleCreate() {
         v-if="!stagedImages.length"
         class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
       >
-        <UIcon
-          name="i-lucide-images"
-          class="size-12 text-muted"
-        />
+        <UIcon name="i-lucide-images" class="size-12 text-muted" />
         <div>
           <p class="text-default font-medium">
             Brak zdjęć
@@ -1074,10 +1128,7 @@ async function handleCreate() {
         </div>
       </div>
 
-      <div
-        v-else
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-      >
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           v-for="(img, index) in stagedImages"
           :key="img.preview"
@@ -1088,17 +1139,14 @@ async function handleCreate() {
               :src="img.preview"
               :alt="img.description || 'Podgląd'"
               class="w-full h-full object-cover"
-            >
+            />
           </div>
           <button
             type="button"
             class="absolute top-2 right-2 size-7 rounded-full bg-red-500/85 hover:bg-red-500 text-white flex items-center justify-center shadow transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
             @click="removeStagedImage(index)"
           >
-            <UIcon
-              name="i-lucide-x"
-              class="size-3.5"
-            />
+            <UIcon name="i-lucide-x" class="size-3.5" />
           </button>
           <div class="p-3 space-y-2 border-t border-default">
             <UInput
@@ -1135,12 +1183,14 @@ async function handleCreate() {
             multiple
             class="hidden"
             @change="handleFileChange"
-          >
+          />
           <UButton
             as="span"
             icon="i-lucide-upload"
             size="sm"
-          >Wgraj pliki</UButton>
+          >
+            Wgraj pliki
+          </UButton>
         </label>
       </div>
 
@@ -1148,10 +1198,7 @@ async function handleCreate() {
         v-if="!stagedFiles.length"
         class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
       >
-        <UIcon
-          name="i-lucide-folder-open"
-          class="size-12 text-muted"
-        />
+        <UIcon name="i-lucide-folder-open" class="size-12 text-muted" />
         <div>
           <p class="text-default font-medium">
             Brak plików
@@ -1162,10 +1209,7 @@ async function handleCreate() {
         </div>
       </div>
 
-      <div
-        v-else
-        class="flex flex-col gap-2"
-      >
+      <div v-else class="flex flex-col gap-2">
         <div
           v-for="(file, index) in stagedFiles"
           :key="`${file.name}-${index}`"
@@ -1188,10 +1232,7 @@ async function handleCreate() {
             class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-error hover:text-error/80"
             @click="removeStagedFile(index)"
           >
-            <UIcon
-              name="i-lucide-trash-2"
-              class="size-4"
-            />
+            <UIcon name="i-lucide-trash-2" class="size-4" />
           </button>
         </div>
       </div>

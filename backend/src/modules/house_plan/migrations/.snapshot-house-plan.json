@@ -261,104 +261,6 @@
           "nullable": false,
           "mappedType": "text"
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "text"
-        },
-        "vendor_id": {
-          "name": "vendor_id",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "text"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamptz",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "length": 6,
-          "default": "now()",
-          "mappedType": "datetime"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamptz",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "length": 6,
-          "default": "now()",
-          "mappedType": "datetime"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamptz",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "length": 6,
-          "mappedType": "datetime"
-        }
-      },
-      "name": "plan_family",
-      "schema": "public",
-      "indexes": [
-        {
-          "keyName": "IDX_plan_family_deleted_at",
-          "columnNames": [],
-          "composite": false,
-          "constraint": false,
-          "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_plan_family_deleted_at\" ON \"plan_family\" (\"deleted_at\") WHERE deleted_at IS NULL"
-        },
-        {
-          "keyName": "IDX_plan_family_vendor_id_name_unique",
-          "columnNames": [],
-          "composite": false,
-          "constraint": false,
-          "primary": false,
-          "unique": false,
-          "expression": "CREATE UNIQUE INDEX IF NOT EXISTS \"IDX_plan_family_vendor_id_name_unique\" ON \"plan_family\" (\"vendor_id\", \"name\") WHERE deleted_at IS NULL"
-        },
-        {
-          "keyName": "plan_family_pkey",
-          "columnNames": [
-            "id"
-          ],
-          "composite": false,
-          "constraint": true,
-          "primary": true,
-          "unique": true
-        }
-      ],
-      "checks": [],
-      "foreignKeys": {},
-      "nativeEnums": {}
-    },
-    {
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "text"
-        },
         "title": {
           "name": "title",
           "type": "text",
@@ -575,15 +477,6 @@
           "nullable": true,
           "mappedType": "text"
         },
-        "family_id": {
-          "name": "family_id",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "text"
-        },
         "raw_price": {
           "name": "raw_price",
           "type": "jsonb",
@@ -630,15 +523,6 @@
       "schema": "public",
       "indexes": [
         {
-          "keyName": "IDX_house_plan_family_id",
-          "columnNames": [],
-          "composite": false,
-          "constraint": false,
-          "primary": false,
-          "unique": false,
-          "expression": "CREATE INDEX IF NOT EXISTS \"IDX_house_plan_family_id\" ON \"house_plan\" (\"family_id\") WHERE deleted_at IS NULL"
-        },
-        {
           "keyName": "IDX_house_plan_deleted_at",
           "columnNames": [],
           "composite": false,
@@ -659,21 +543,7 @@
         }
       ],
       "checks": [],
-      "foreignKeys": {
-        "house_plan_family_id_foreign": {
-          "constraintName": "house_plan_family_id_foreign",
-          "columnNames": [
-            "family_id"
-          ],
-          "localTableName": "public.house_plan",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "referencedTableName": "public.plan_family",
-          "deleteRule": "set null",
-          "updateRule": "cascade"
-        }
-      },
+      "foreignKeys": {},
       "nativeEnums": {}
     }
   ],

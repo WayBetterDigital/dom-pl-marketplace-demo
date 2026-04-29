@@ -50,14 +50,6 @@ const formatPrice = (price: number) => {
   }).format(price)
 }
 
-const { data: variants } = await useAsyncData(
-  `house-plan-variants-${id}`,
-  () => plan.value?.family
-    ? housePlanService.listHousePlans({ familyId: plan.value.family.id, limit: 10 })
-    : Promise.resolve(null),
-  { lazy: true }
-)
-
 const { data: similar } = await useAsyncData(
   `house-plan-similar-${id}`,
   () => housePlanService.listHousePlans({
@@ -73,10 +65,6 @@ const { data: others } = await useAsyncData(
   `house-plan-others-${id}`,
   () => housePlanService.listHousePlans({ limit: 5 }),
   { lazy: true }
-)
-
-const variantPlans = computed(() =>
-  variants.value?.data.filter(p => p.id !== id).slice(0, 8) ?? []
 )
 
 const similarPlans = computed(() =>
@@ -156,12 +144,6 @@ const hasCharacteristics = computed(() => {
         />
 
         <section class="flex flex-col justify-end mt-auto">
-          <!-- Warianty projektu -->
-          <HousePlanCarousel
-            v-if="variantPlans.length"
-            title="Warianty projektu"
-            :plans="variantPlans"
-          />
           <!-- Podobne projekty -->
           <HousePlanCarousel
             v-if="similarPlans.length"
@@ -169,7 +151,7 @@ const hasCharacteristics = computed(() => {
             :plans="similarPlans"
           />
           <HousePlanCarousel
-            v-else-if="otherPlans.length && !variantPlans.length"
+            v-else-if="otherPlans.length"
             title="Inne projekty"
             :plans="otherPlans"
           />
@@ -182,16 +164,6 @@ const hasCharacteristics = computed(() => {
           <h1 class="text-3xl font-bold text-default mb-2">
             {{ plan?.title }}
           </h1>
-          <div
-            v-if="plan?.family"
-            class="flex items-center gap-1.5 mb-2"
-          >
-            <UIcon
-              name="i-lucide-layers-2"
-              class="size-4 text-muted"
-            />
-            <span class="text-sm text-muted">{{ plan.family.name }}</span>
-          </div>
           <p class="text-3xl font-bold text-primary">
             {{ formatPrice(plan?.price ?? 0) }}
           </p>
