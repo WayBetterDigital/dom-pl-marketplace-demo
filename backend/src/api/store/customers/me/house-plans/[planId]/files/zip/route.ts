@@ -2,6 +2,25 @@ import { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/
 import archiver from "archiver"
 import { getPurchasedPlanFilesWorkflow } from "../../../../../../../../workflows/purchases/get-purchased-plan-files"
 
+// File URLs use the public S3_FILE_URL host (e.g. http://localhost:9090).
+// Inside Docker the backend cannot reach that host; replace the origin with
+// S3_ENDPOINT (e.g. http://minio:9000) so fetches go via the internal network.
+function toInternalUrl(publicUrl: string): string {
+  const fileUrl = process.env.S3_FILE_URL
+  const endpoint = process.env.S3_ENDPOINT
+  if (!fileUrl || !endpoint) return publicUrl
+  try {
+    const publicOrigin = new URL(fileUrl).origin
+    const internalOrigin = new URL(endpoint).origin
+    if (publicUrl.startsWith(publicOrigin)) {
+      return internalOrigin + publicUrl.slice(publicOrigin.length)
+    }
+  } catch {
+    // ignore malformed env values
+  }
+  return publicUrl
+}
+
 /**
  * GET /store/customers/me/house-plans/:planId/files/zip
  *
@@ -61,7 +80,7 @@ export async function GET(
   // Each file is buffered individually to avoid holding all files in memory at once
   // (archiver processes them sequentially before finalizing).
   for (const file of files) {
-    const response = await fetch(file.url)
+    const response = await fetch(toInternalUrl(file.url))
 
     if (!response.ok) {
       // Skip undownloadable files rather than aborting the whole archive

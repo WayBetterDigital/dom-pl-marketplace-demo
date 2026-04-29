@@ -69,6 +69,7 @@ const planTitle = computed(() =>
     : plan.value?.title) ?? ''
 )
 
+const toast = useToast()
 const downloadingZip = ref(false)
 async function handleDownloadZip() {
   downloadingZip.value = true
@@ -78,6 +79,8 @@ async function handleDownloadZip() {
     } else {
       await downloadZipAsCustomer(id, planTitle.value)
     }
+  } catch {
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać archiwum.', color: 'error' })
   } finally {
     downloadingZip.value = false
   }
@@ -188,7 +191,7 @@ async function handleDownloadFile(url: string, name: string) {
     <!-- Vendor or purchased: show files -->
     <template v-else-if="pageState === 'vendor' || pageState === 'purchased'">
       <!-- ZIP download -->
-      <div class="flex justify-end mb-4">
+      <div v-if="files.length" class="flex justify-end mb-4">
         <UButton
           icon="i-lucide-archive"
           variant="outline"

@@ -41,6 +41,8 @@ async function handleDownloadZip() {
   downloadingZip.value = true
   try {
     await downloadZip(id, plan.value?.title ?? id)
+  } catch {
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać archiwum.', color: 'error' })
   } finally {
     downloadingZip.value = false
   }

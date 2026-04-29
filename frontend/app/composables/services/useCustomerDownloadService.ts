@@ -1,4 +1,4 @@
-import { useMedusaClient } from '#imports'
+import { useMedusaClient, useRuntimeConfig } from '#imports'
 import type { HousePlanFile } from './useFileService'
 
 export interface PurchasedFilesResult {
@@ -8,6 +8,9 @@ export interface PurchasedFilesResult {
 
 export function useCustomerDownloadService() {
   const sdk = useMedusaClient()
+  const config = useRuntimeConfig()
+  const clientBaseUrl = (config.public.medusa as any).baseUrl as string
+  const publishableKey = (config.public.medusa as any).publishableKey as string
 
   async function getPurchasedFiles(planId: string): Promise<PurchasedFilesResult | null> {
     try {
@@ -29,13 +32,16 @@ export function useCustomerDownloadService() {
   }
 
   async function downloadZip(planId: string, planTitle: string): Promise<void> {
-    // Override accept so the SDK returns the raw Response instead of parsing as JSON
-    const response = await sdk.client.fetch<globalThis.Response>(
-      `/store/customers/me/house-plans/${planId}/files/zip`,
-      { headers: { accept: 'application/octet-stream' } }
-    )
+    const token = await sdk.client.getToken()
+    const headers: Record<string, string> = { 'x-publishable-api-key': publishableKey }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const blob = await (response as unknown as globalThis.Response).blob()
+    const res = await fetch(
+      `${clientBaseUrl}/store/customers/me/house-plans/${planId}/files/zip`,
+      { headers }
+    )
+    if (!res.ok) throw new Error('Błąd pobierania plików')
+    const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url

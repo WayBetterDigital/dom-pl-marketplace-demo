@@ -42,11 +42,12 @@ export function useFileService() {
   const publishableKey = (config.public.medusa as any).publishableKey as string
 
   async function downloadZip(planId: string, planTitle: string): Promise<void> {
-    const response = await sdk.client.fetch<globalThis.Response>(
-      `/store/house-plans/${planId}/files/zip`,
-      { headers: { accept: 'application/octet-stream' } }
-    )
-    const blob = await (response as unknown as globalThis.Response).blob()
+    const clientBaseUrl = (config.public.medusa as any).baseUrl as string
+    const res = await fetch(`${clientBaseUrl}/store/house-plans/${planId}/files/zip`, {
+      headers: { 'x-publishable-api-key': publishableKey }
+    })
+    if (!res.ok) throw new Error('Błąd pobierania plików')
+    const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
