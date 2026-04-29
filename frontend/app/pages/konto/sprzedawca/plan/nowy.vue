@@ -54,18 +54,18 @@ type StagedSketch = {
   preview: string
   floor: number
   type: SketchType
-};
-const stagedSketches = ref<StagedSketch[]>([]);
+}
+const stagedSketches = ref<StagedSketch[]>([])
 
-const sketchModalOpen = ref(false);
-const sketchFormFile = ref<File | null>(null);
-const sketchFormPreview = ref<string | null>(null);
-const sketchFormFloor = ref("0");
-const sketchFormType = ref("0");
+const sketchModalOpen = ref(false)
+const sketchFormFile = ref<File | null>(null)
+const sketchFormPreview = ref<string | null>(null)
+const sketchFormFloor = ref('0')
+const sketchFormType = ref('0')
 
 const stagedSketchesByFloor = computed(() => {
   const floors = [...new Set(stagedSketches.value.map((s) => s.floor))].sort(
-    (a, b) => a - b,
+    (a, b) => a - b
   );
   return floors.map((floor) => ({
     floor,
@@ -75,36 +75,36 @@ const stagedSketchesByFloor = computed(() => {
       null,
     withLabels:
       stagedSketches.value.find((s) => s.floor === floor && s.type === 1) ??
-      null,
-  }));
-});
+      null
+  }))
+})
 
 const showLabels = reactive<Record<number, boolean>>({});
 
 function toggleStagedLabels(floor: number) {
-  showLabels[floor] = !showLabels[floor];
+  showLabels[floor] = !showLabels[floor]
 }
 
 type SketchGroup = {
-  base: StagedSketch | null;
-  withLabels: StagedSketch | null;
+  base: StagedSketch | null
+  withLabels: StagedSketch | null
 };
 
 function activeStagedPreview(floor: number, group: SketchGroup): string {
-  if (showLabels[floor] && group.withLabels) return group.withLabels.preview;
-  return group.base?.preview ?? group.withLabels?.preview ?? "";
+  if (showLabels[floor] && group.withLabels) return group.withLabels.preview
+  return group.base?.preview ?? group.withLabels?.preview ?? ''
 }
 
 function activeStagedType(floor: number, group: SketchGroup): SketchType {
-  return showLabels[floor] && group.withLabels ? 1 : group.base ? 0 : 1;
+  return showLabels[floor] && group.withLabels ? 1 : group.base ? 0 : 1
 }
 
 function openSketchModal() {
-  sketchFormFile.value = null;
-  sketchFormPreview.value = null;
-  sketchFormFloor.value = "0";
-  sketchFormType.value = "0";
-  sketchModalOpen.value = true;
+  sketchFormFile.value = null
+  sketchFormPreview.value = null
+  sketchFormFloor.value = "0"
+  sketchFormType.value = "0"
+  sketchModalOpen.value = true
 }
 
 function handleSketchFileChange(e: Event) {
@@ -243,19 +243,19 @@ async function handleCreate() {
     });
     return;
   }
-  creating.value = true;
-  let createdId: string | null = null;
+  creating.value = true
+  let createdId: string | null = null
   try {
-    const created = await createVendorHousePlan(vendorId, toCreatePayload());
-    createdId = created.id;
+    const created = await createVendorHousePlan(vendorId, toCreatePayload())
+    createdId = created.id
   } catch {
     toast.add({
-      title: "Błąd",
-      description: "Nie udało się utworzyć planu.",
-      color: "error",
-    });
-    creating.value = false;
-    return;
+      title: 'Błąd',
+      description: 'Nie udało się utworzyć planu.',
+      color: 'error'
+    })
+    creating.value = false
+    return
   }
 
   // Uploady są niekrytyczne — błąd nie blokuje przejścia do edycji
@@ -264,10 +264,10 @@ async function handleCreate() {
       await uploadHousePlanImages(vendorId, createdId, mainImages.value);
     } catch {
       toast.add({
-        title: "Ostrzeżenie",
-        description: "Nie udało się wgrać zdjęć głównych.",
-        color: "warning",
-      });
+        title: 'Ostrzeżenie',
+        description: 'Nie udało się wgrać zdjęć głównych.',
+        color: 'warning'
+      })
     }
   }
   for (const img of stagedImages.value) {
@@ -277,25 +277,25 @@ async function handleCreate() {
         createdId,
         img.file,
         img.description || undefined,
-        img.category,
-      );
+        img.category
+      )
     } catch {
       toast.add({
-        title: "Ostrzeżenie",
+        title: 'Ostrzeżenie',
         description: `Nie udało się wgrać ${img.file.name}.`,
-        color: "warning",
-      });
+        color: 'warning'
+      })
     }
   }
   for (const file of stagedFiles.value) {
     try {
-      await uploadFile(createdId, file);
+      await uploadFile(createdId, file)
     } catch {
       toast.add({
-        title: "Ostrzeżenie",
+        title: 'Ostrzeżenie',
         description: `Nie udało się wgrać ${file.name}.`,
-        color: "warning",
-      });
+        color: 'warning'
+      })
     }
   }
   for (const sketch of stagedSketches.value) {
@@ -303,20 +303,20 @@ async function handleCreate() {
       await createSketch(createdId, {
         file: sketch.file,
         floor: sketch.floor,
-        type: sketch.type,
+        type: sketch.type
       });
     } catch {
       toast.add({
-        title: "Ostrzeżenie",
+        title: 'Ostrzeżenie',
         description: `Nie udało się wgrać rzutu: ${sketch.file.name}.`,
-        color: "warning",
-      });
+        color: 'warning'
+      })
     }
   }
 
-  toast.add({ title: "Plan utworzony", color: "success" });
-  creating.value = false;
-  await router.push(`/produkty/${createdId}`);
+  toast.add({ title: 'Plan utworzony', color: 'success' })
+  creating.value = false
+  await router.push(`/produkty/${createdId}`)
 }
 </script>
 
@@ -424,9 +424,9 @@ async function handleCreate() {
               class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted pointer-events-none"
             >
               <UIcon name="i-lucide-image-plus" class="size-12" />
-              <span class="text-sm font-medium"
-                >Kliknij, aby dodać zdjęcia</span
-              >
+              <span class="text-sm font-medium">
+                Kliknij, aby dodać zdjęcia
+              </span>
               <span class="text-xs">JPG, PNG, WebP · maks. 10 MB</span>
             </div>
             <div
@@ -459,7 +459,9 @@ async function handleCreate() {
         </div>
 
         <div>
-          <h2 class="text-xl font-semibold text-default mb-4">Opis projektu</h2>
+          <h2 class="text-xl font-semibold text-default mb-4">
+            Opis projektu
+          </h2>
           <UTextarea
             v-model="form.description"
             :rows="8"
