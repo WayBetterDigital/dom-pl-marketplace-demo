@@ -4,12 +4,12 @@ import {
   useSketchService,
   floorLabel,
   FLOOR_OPTIONS,
-  TYPE_OPTIONS,
+  TYPE_OPTIONS
 } from '~/composables/services/useSketchService'
 import type { HousePlanSketch, SketchType } from '~/composables/services/useSketchService'
 import { usePlanMirror } from '~/composables/usePlanMirror'
 
-const props = defineProps<{ planId: string }>()
+const props = defineProps<{ planId: string, readonly?: boolean }>()
 
 const toast = useToast()
 const { getSketches, createSketch, updateSketch, deleteSketch } = useSketchService()
@@ -27,7 +27,7 @@ const sketchesByFloor = computed(() => {
     floor,
     label: floorLabel(floor),
     base: all.find(s => s.floor === floor && s.type === 0) ?? null,
-    withLabels: all.find(s => s.floor === floor && s.type === 1) ?? null,
+    withLabels: all.find(s => s.floor === floor && s.type === 1) ?? null
   }))
 })
 
@@ -37,7 +37,7 @@ function toggleLabels(floor: number) {
   showLabels[floor] = !showLabels[floor]
 }
 
-function activeUrl(floor: number, group: { base: any; withLabels: any }) {
+function activeUrl(floor: number, group: { base: HousePlanSketch | null, withLabels: HousePlanSketch | null }) {
   if (showLabels[floor] && group.withLabels) return group.withLabels.url
   return group.base?.url ?? group.withLabels?.url ?? ''
 }
@@ -103,21 +103,22 @@ async function submitForm() {
       await updateSketch(props.planId, editingSketch.value.id, {
         file: formFile.value ?? undefined,
         floor: Number(formFloor.value),
-        type: Number(formType.value) as SketchType,
+        type: Number(formType.value) as SketchType
       })
       toast.add({ title: 'Szkic zaktualizowany', color: 'success' })
     } else {
       await createSketch(props.planId, {
         file: formFile.value!,
         floor: Number(formFloor.value),
-        type: Number(formType.value) as SketchType,
+        type: Number(formType.value) as SketchType
       })
       toast.add({ title: 'Szkic dodany', color: 'success' })
     }
     isModalOpen.value = false
     await refresh()
-  } catch (err: any) {
-    formError.value = err?.data?.message || err?.message || 'Wystąpił błąd'
+  } catch (err: unknown) {
+    const e = err as { data?: { message?: string }, message?: string }
+    formError.value = e?.data?.message || e?.message || 'Wystąpił błąd'
   } finally {
     formSubmitting.value = false
   }
@@ -148,6 +149,7 @@ async function handleDelete(sketch: HousePlanSketch) {
         Rzuty kondygnacji
       </h2>
       <UButton
+        v-if="!readonly"
         icon="i-lucide-plus"
         size="sm"
         variant="outline"
@@ -163,7 +165,10 @@ async function handleDelete(sketch: HousePlanSketch) {
       v-if="!sketchesByFloor.length"
       class="flex flex-col items-center justify-center gap-3 py-12 border border-dashed border-default rounded-xl text-center"
     >
-      <UIcon name="i-lucide-layout-panel-top" class="size-10 text-muted" />
+      <UIcon
+        name="i-lucide-layout-panel-top"
+        class="size-10 text-muted"
+      />
       <p class="text-sm text-muted">
         Brak rzutów kondygnacji.
       </p>
@@ -187,9 +192,11 @@ async function handleDelete(sketch: HousePlanSketch) {
           :style="mirrored ? 'transform: scaleX(-1)' : ''"
         >
 
-        <div class="absolute top-2 left-2 z-10 flex gap-1 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity [.group:hover_&]:opacity-100">
-        </div>
-        <div class="absolute inset-0 group">
+        <div class="absolute top-2 left-2 z-10 flex gap-1 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity [.group:hover_&]:opacity-100" />
+        <div
+          v-if="!readonly"
+          class="absolute inset-0 group"
+        >
           <div class="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <!-- Edit base sketch -->
             <button
@@ -199,7 +206,10 @@ async function handleDelete(sketch: HousePlanSketch) {
               class="size-7 rounded-full bg-white/85 hover:bg-white text-gray-800 flex items-center justify-center cursor-pointer shadow transition-colors"
               @click="openEdit(group.base)"
             >
-              <UIcon name="i-lucide-pencil" class="size-3.5" />
+              <UIcon
+                name="i-lucide-pencil"
+                class="size-3.5"
+              />
             </button>
             <!-- Edit withLabels sketch -->
             <button
@@ -209,7 +219,10 @@ async function handleDelete(sketch: HousePlanSketch) {
               class="size-7 rounded-full bg-white/85 hover:bg-white text-gray-800 flex items-center justify-center cursor-pointer shadow transition-colors"
               @click="openEdit(group.withLabels)"
             >
-              <UIcon name="i-lucide-tag" class="size-3.5" />
+              <UIcon
+                name="i-lucide-tag"
+                class="size-3.5"
+              />
             </button>
             <!-- Delete active sketch -->
             <button
@@ -220,7 +233,10 @@ async function handleDelete(sketch: HousePlanSketch) {
               :disabled="deleteSubmitting"
               @click="handleDelete((showLabels[group.floor] && group.withLabels) ? group.withLabels : (group.base ?? group.withLabels!))"
             >
-              <UIcon name="i-lucide-trash-2" class="size-3.5" />
+              <UIcon
+                name="i-lucide-trash-2"
+                class="size-3.5"
+              />
             </button>
           </div>
         </div>
@@ -238,7 +254,10 @@ async function handleDelete(sketch: HousePlanSketch) {
             ]"
             @click="toggleLabels(group.floor)"
           >
-            <UIcon name="i-lucide-tag" class="size-5" />
+            <UIcon
+              name="i-lucide-tag"
+              class="size-5"
+            />
           </button>
 
           <!-- Mirror -->
@@ -253,7 +272,10 @@ async function handleDelete(sketch: HousePlanSketch) {
             ]"
             @click="mirrored = !mirrored"
           >
-            <UIcon name="i-lucide-flip-horizontal-2" class="size-5" />
+            <UIcon
+              name="i-lucide-flip-horizontal-2"
+              class="size-5"
+            />
           </button>
         </div>
       </div>

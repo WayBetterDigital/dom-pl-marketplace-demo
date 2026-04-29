@@ -1,8 +1,9 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
+import { HOUSE_PLAN_MODULE } from "../../../../../modules/house_plan"
 import { HOUSE_PLAN_FIELDS } from "../../../../../modules/house_plan/fields"
 import { createProductsWorkflow } from "@medusajs/medusa/core-flows"
-import { HOUSE_PLAN_MODULE } from "../../../../../modules/house_plan"
+import HousePlanModuleService from "../../../../../modules/house_plan/service"
 import { VENDOR_MODULE } from "../../../../../modules/vendor"
 import type { CreateVendorHousePlanSchema } from "./validators"
 
