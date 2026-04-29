@@ -35,9 +35,9 @@ if (error.value || !plan.value) {
 const { data: accessData, pending } = await useAsyncData(
   `plan-access-${id}`,
   async () => {
-    // Vendor check first (JWT from localStorage)
+    // Vendor check: only the vendor who owns this plan gets direct access
     if (!vendor.value) restoreVendorSession()
-    if (vendor.value) {
+    if (vendor.value && vendor.value.id === plan.value!.vendor?.id) {
       const files = await getFiles(id)
       return { type: 'vendor' as const, files, plan_title: plan.value!.title }
     }
@@ -185,8 +185,8 @@ async function handleDownloadFile(url: string, name: string) {
       </UButton>
     </div>
 
-    <!-- Purchased -->
-    <template v-else-if="pageState === 'purchased'">
+    <!-- Vendor or purchased: show files -->
+    <template v-else-if="pageState === 'vendor' || pageState === 'purchased'">
       <!-- ZIP download -->
       <div class="flex justify-end mb-4">
         <UButton
@@ -201,7 +201,7 @@ async function handleDownloadFile(url: string, name: string) {
         </UButton>
       </div>
 
-      <!-- Empty state (purchased but no files yet) -->
+      <!-- Empty state -->
       <div
         v-if="!files.length"
         class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
