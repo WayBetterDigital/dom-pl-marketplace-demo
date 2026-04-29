@@ -28,6 +28,9 @@ export function useAuthService() {
   async function logout(): Promise<void> {
     await sdk.auth.logout()
     customer.value = null
+    if (import.meta.client) {
+      new BroadcastChannel('auth').postMessage('customer-logout')
+    }
   }
 
   async function getSession(): Promise<AppCustomer | null> {
