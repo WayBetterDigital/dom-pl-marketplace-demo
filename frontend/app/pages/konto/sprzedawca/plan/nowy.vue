@@ -102,98 +102,98 @@ function activeStagedType(floor: number, group: SketchGroup): SketchType {
 function openSketchModal() {
   sketchFormFile.value = null
   sketchFormPreview.value = null
-  sketchFormFloor.value = "0"
-  sketchFormType.value = "0"
+  sketchFormFloor.value = '0'
+  sketchFormType.value = '0'
   sketchModalOpen.value = true
 }
 
 function handleSketchFileChange(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
-  sketchFormFile.value = file;
-  if (sketchFormPreview.value) URL.revokeObjectURL(sketchFormPreview.value);
-  sketchFormPreview.value = URL.createObjectURL(file);
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  sketchFormFile.value = file
+  if (sketchFormPreview.value) URL.revokeObjectURL(sketchFormPreview.value)
+  sketchFormPreview.value = URL.createObjectURL(file)
 }
 
 function addStagedSketch() {
-  if (!sketchFormFile.value) return;
-  const floor = Number(sketchFormFloor.value);
-  const type = Number(sketchFormType.value) as SketchType;
+  if (!sketchFormFile.value) return
+  const floor = Number(sketchFormFloor.value)
+  const type = Number(sketchFormType.value) as SketchType
   const existingIdx = stagedSketches.value.findIndex(
-    (s) => s.floor === floor && s.type === type,
-  );
+    (s) => s.floor === floor && s.type === type
+  )
   if (existingIdx !== -1) {
-    URL.revokeObjectURL(stagedSketches.value[existingIdx]!.preview);
-    stagedSketches.value.splice(existingIdx, 1);
+    URL.revokeObjectURL(stagedSketches.value[existingIdx]!.preview)
+    stagedSketches.value.splice(existingIdx, 1)
   }
   stagedSketches.value.push({
     file: sketchFormFile.value,
     preview: sketchFormPreview.value!,
     floor,
-    type,
-  });
-  sketchModalOpen.value = false;
-  sketchFormFile.value = null;
-  sketchFormPreview.value = null;
+    type
+  })
+  sketchModalOpen.value = false
+  sketchFormFile.value = null
+  sketchFormPreview.value = null
 }
 
 function removeStagedSketch(floor: number, type: SketchType) {
   const idx = stagedSketches.value.findIndex(
-    (s) => s.floor === floor && s.type === type,
-  );
+    (s) => s.floor === floor && s.type === type
+  )
   if (idx === -1) return;
-  URL.revokeObjectURL(stagedSketches.value[idx]!.preview);
-  stagedSketches.value.splice(idx, 1);
+  URL.revokeObjectURL(stagedSketches.value[idx]!.preview)
+  stagedSketches.value.splice(idx, 1)
 }
 
 const CATEGORY_LABELS: Record<GalleryCategory, string> = {
-  wizualizacje: "Wizualizacje",
-  strefa_dzienna: "Strefa dzienna",
-  kuchnia: "Kuchnia",
-  lazienka: "Łazienka",
-};
+  wizualizacje: 'Wizualizacje',
+  strefa_dzienna: 'Strefa dzienna',
+  kuchnia: 'Kuchnia',
+  lazienka: 'Łazienka'
+}
 const categoryOptions = GALLERY_CATEGORIES.map((c) => ({
   label: CATEGORY_LABELS[c],
-  value: c,
-}));
+  value: c
+}))
 
 function handleMainImageSelect(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const files = Array.from(input.files ?? []);
-  input.value = "";
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  input.value = ''
   for (const file of files) {
     if (file.size > 10 * 1024 * 1024) {
       toast.add({
-        title: "Plik za duży",
+        title: 'Plik za duży',
         description: `${file.name} przekracza 10 MB.`,
-        color: "warning",
-      });
-      continue;
+        color: 'warning'
+      })
+      continue
     }
-    mainImages.value.push(file);
-    mainPreviews.value.push(URL.createObjectURL(file));
+    mainImages.value.push(file)
+    mainPreviews.value.push(URL.createObjectURL(file))
   }
 }
 
 function removeMainImage(index: number) {
-  URL.revokeObjectURL(mainPreviews.value[index]!);
-  mainImages.value.splice(index, 1);
-  mainPreviews.value.splice(index, 1);
+  URL.revokeObjectURL(mainPreviews.value[index]!)
+  mainImages.value.splice(index, 1)
+  mainPreviews.value.splice(index, 1)
 }
 
 function handleGalleryFileChange(e: Event) {
-  const input = e.target as HTMLInputElement;
-  const files = Array.from(input.files ?? []);
-  input.value = "";
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  input.value = ''
   for (const file of files) {
     if (file.size > 10 * 1024 * 1024) {
       toast.add({
-        title: "Plik za duży",
+        title: 'Plik za duży',
         description: `${file.name} przekracza 10 MB.`,
-        color: "warning",
-      });
-      continue;
+        color: 'warning'
+      })
+      continue
     }
     stagedImages.value.push({
       file,
