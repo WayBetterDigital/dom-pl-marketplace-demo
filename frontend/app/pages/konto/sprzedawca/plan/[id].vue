@@ -1,24 +1,32 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'vendor-auth' })
-import { createError, useAsyncData } from "#imports";
-import { useHousePlanService } from "~/composables/services/useHousePlanService";
-import { useVendorService } from "~/composables/services/useVendorService";
-import { useVendorPlanForm } from "~/composables/useVendorPlanForm";
+import { createError, useAsyncData } from '#imports'
+import { useHousePlanService } from '~/composables/services/useHousePlanService'
+import { useVendorService } from '~/composables/services/useVendorService'
+import { useVendorPlanForm } from '~/composables/useVendorPlanForm'
 import {
   useGalleryService,
   GALLERY_CATEGORIES,
-  ALL_CATEGORY,
-} from "~/composables/services/useGalleryService";
-import type { GalleryCategory, GalleryImage } from "~/composables/services/useGalleryService";
+  ALL_CATEGORY
+} from '~/composables/services/useGalleryService'
+import type { GalleryCategory, GalleryImage } from '~/composables/services/useGalleryService'
+import {
+  useFileService,
+  formatFileSize,
+  fileIcon,
+  fileIconColor
+} from '~/composables/services/useFileService'
+
+definePageMeta({ middleware: 'vendor-auth' })
 
 const route = useRoute()
 const toast = useToast()
 const vendorId = route.query.vendorId as string
 const planId = route.params.id as string
 
-const { getHousePlan } = useHousePlanService();
-const { updateVendorHousePlan } = useVendorService();
-const { getGallery } = useGalleryService();
+const { getHousePlan } = useHousePlanService()
+const { updateVendorHousePlan } = useVendorService()
+const { getGallery, uploadGalleryImage, updateGalleryImage, deleteGalleryImage } = useGalleryService()
+const { getFiles, uploadFile, deleteFile } = useFileService()
 
 const { data: plan, error, refresh } = await useAsyncData(`vendor-plan-edit-${planId}`, () => getHousePlan(planId))
 if (error.value || !plan.value) throw createError({ statusCode: 404, statusMessage: 'Projekt nie znaleziony', fatal: true })
