@@ -345,7 +345,6 @@ const PLAN_GALLERY: Record<string, GalleryEntry[]> = {
   ],
 }
 
-// Placeholder PDF — w produkcji zastąpiony prawdziwymi plikami z magazynu plików
 const SAMPLE_PDF_URL = "https://www.orimi.com/pdf-test.pdf"
 
 const PLAN_FILES: Record<string, Array<{ name: string; url: string; mime_type: string; size: number }>> = {
