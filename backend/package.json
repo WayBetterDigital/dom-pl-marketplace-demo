@@ -29,7 +29,9 @@
     "@medusajs/cli": "2.13.1",
     "@medusajs/file-s3": "2.13.1",
     "@medusajs/framework": "2.13.1",
-    "@medusajs/medusa": "2.13.1"
+    "@medusajs/medusa": "2.13.1",
+    "@types/archiver": "^7.0.0",
+    "archiver": "^7.0.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.13.1",

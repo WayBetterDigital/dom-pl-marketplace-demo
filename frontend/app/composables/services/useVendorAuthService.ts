@@ -47,6 +47,7 @@ export function useVendorAuthService() {
   function logout(): void {
     if (import.meta.client) {
       localStorage.removeItem(VENDOR_TOKEN_KEY)
+      new BroadcastChannel('auth').postMessage('vendor-logout')
     }
     vendor.value = null
   }

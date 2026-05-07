@@ -1,4 +1,5 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
+import { FILE_LIMITS } from "../../lib/file-limits"
 import {
   Badge,
   Button,
@@ -360,6 +361,7 @@ const HousePlanDetailsWidget = ({ data: product }: DetailWidgetProps<AdminProduc
 
       <GallerySection productId={product.id} />
       <SketchSection productId={product.id} />
+      {housePlan && <FilesSection housePlanId={housePlan.id} />}
 
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <Drawer.Content>
@@ -1136,6 +1138,207 @@ const SketchSection = ({ productId }: { productId: string }) => {
         </Drawer.Content>
       </Drawer>
     </>
+  )
+}
+
+// ─── Files section ───────────────────────────────────────────────────────────
+
+type HousePlanFile = {
+  id: string
+  house_plan_id: string
+  url: string
+  name: string
+  mime_type: string
+  size: number
+  sort_order: number
+}
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 B"
+  const units = ["B", "KB", "MB", "GB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`
+}
+
+const fileIcon = (mimeType: string): string => {
+  if (mimeType === "application/pdf") return "📄"
+  if (mimeType.includes("zip") || mimeType.includes("rar")) return "🗜️"
+  if (mimeType.startsWith("image/")) return "🖼️"
+  return "📁"
+}
+
+const FilesSection = ({ housePlanId }: { housePlanId: string }) => {
+  const queryClient = useQueryClient()
+  const filesKey = ["house-plan-files", housePlanId]
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const { data: filesData, isLoading } = useQuery({
+    queryKey: filesKey,
+    queryFn: () =>
+      sdk.client.fetch<{ files: HousePlanFile[] }>(
+        `/admin/house-plans/${housePlanId}/files`
+      ),
+  })
+
+  const files = filesData?.files ?? []
+
+  const deleteMutation = useMutation({
+    mutationFn: (fileId: string) =>
+      sdk.client.fetch(`/admin/house-plans/${housePlanId}/files/${fileId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: filesKey })
+      toast.success("Plik usunięty")
+    },
+    onError: () => toast.error("Nie udało się usunąć pliku"),
+  })
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? [])
+    if (fileInputRef.current) fileInputRef.current.value = ""
+    if (!selected.length) return
+
+    for (const file of selected) {
+      if (file.size > FILE_LIMITS.planFiles) {
+        const mb = Math.round(FILE_LIMITS.planFiles / (1024 * 1024))
+        toast.error(`${file.name} — plik przekracza limit ${mb} MB`)
+        continue
+      }
+      setUploading(true)
+      try {
+        const baseUrl = (import.meta.env.VITE_BACKEND_URL ?? "").replace(/\/$/, "")
+        const form = new FormData()
+        form.append("file", file)
+        const res = await fetch(`${baseUrl}/admin/house-plans/${housePlanId}/files`, {
+          method: "POST",
+          credentials: "include",
+          body: form,
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error((err as any).message || `Błąd ${res.status}`)
+        }
+        queryClient.invalidateQueries({ queryKey: filesKey })
+        toast.success(`${file.name} — dodano`)
+      } catch (err: any) {
+        toast.error(err?.message || `${file.name} — błąd podczas wgrywania`)
+      } finally {
+        setUploading(false)
+      }
+    }
+  }
+
+  const handleDownload = async (file: HousePlanFile) => {
+    setDownloadingId(file.id)
+    try {
+      const res = await fetch(resolveUrl(file.url))
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = file.name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      toast.error("Nie udało się pobrać pliku")
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Container className="px-6 py-4">
+        <Text size="small" leading="compact" className="text-ui-fg-subtle">
+          Ładowanie plików...
+        </Text>
+      </Container>
+    )
+  }
+
+  return (
+    <Container className="px-6 py-4 divide-y divide-ui-border-base">
+      <div className="flex items-center justify-between pb-4">
+        <Heading level="h2">Pliki do pobrania</Heading>
+        <label className="cursor-pointer">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            size="small"
+            variant="secondary"
+            isLoading={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Wgraj pliki
+          </Button>
+        </label>
+      </div>
+
+      {files.length === 0 ? (
+        <div className="py-6 text-center">
+          <Text size="small" leading="compact" className="text-ui-fg-subtle">
+            Brak plików do pobrania.
+          </Text>
+        </div>
+      ) : (
+        <div className="pt-2 flex flex-col divide-y divide-ui-border-base">
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className="flex items-center gap-3 py-3 group"
+            >
+              <span className="text-xl shrink-0">{fileIcon(file.mime_type)}</span>
+              <div className="flex-1 min-w-0">
+                <Text size="small" leading="compact" weight="plus" className="truncate">
+                  {file.name}
+                </Text>
+                <Text size="xsmall" leading="compact" className="text-ui-fg-subtle">
+                  {formatFileSize(file.size)}
+                </Text>
+              </div>
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a
+                  href={resolveUrl(file.url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-ui-fg-interactive hover:underline"
+                >
+                  Podgląd
+                </a>
+                <button
+                  type="button"
+                  className="text-xs text-ui-fg-interactive hover:underline cursor-pointer disabled:opacity-50"
+                  disabled={downloadingId === file.id}
+                  onClick={() => handleDownload(file)}
+                >
+                  {downloadingId === file.id ? "..." : "Pobierz"}
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-ui-fg-error hover:underline cursor-pointer"
+                  onClick={() => {
+                    if (!confirm(`Usunąć plik "${file.name}"?`)) return
+                    deleteMutation.mutate(file.id)
+                  }}
+                >
+                  Usuń
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Container>
   )
 }
 

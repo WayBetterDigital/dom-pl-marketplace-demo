@@ -345,6 +345,45 @@ const PLAN_GALLERY: Record<string, GalleryEntry[]> = {
   ],
 }
 
+const SAMPLE_PDF_URL = "https://www.orimi.com/pdf-test.pdf"
+
+const PLAN_FILES: Record<string, Array<{ name: string; url: string; mime_type: string; size: number }>> = {
+  "Dom Jednorodzinny Klasyczny 120": [
+    { name: "Projekt architektoniczno-budowlany.pdf",          url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 19083264 },
+    { name: "Projekt techniczny – część architektoniczna.pdf", url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 25796608 },
+    { name: "Projekt konstrukcyjny.pdf",                       url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 14786560 },
+    { name: "Projekt instalacji elektrycznej.pdf",             url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 8806400 },
+    { name: "Projekt instalacji sanitarnej.pdf",               url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 10174464 },
+    { name: "Projekt instalacji c.o..pdf",                     url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 7549952 },
+    { name: "Charakterystyka energetyczna.pdf",                url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 1887437 },
+  ],
+  "Dom Parterowy Modern 90": [
+    { name: "Projekt architektoniczno-budowlany.pdf",          url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 16150323 },
+    { name: "Projekt techniczny – część architektoniczna.pdf", url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 21086003 },
+    { name: "Projekt konstrukcyjny.pdf",                       url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 11848499 },
+    { name: "Projekt instalacji elektrycznej.pdf",             url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 7130317 },
+    { name: "Projekt instalacji sanitarnej.pdf",               url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 8284979 },
+    { name: "Charakterystyka energetyczna (A+).pdf",           url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 2202009 },
+  ],
+  "Dom Bliźniak Ekonomiczny 80": [
+    { name: "Projekt architektoniczno-budowlany.pdf",          url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 14366157 },
+    { name: "Projekt techniczny – dokumentacja.pdf",           url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 19398246 },
+    { name: "Projekt konstrukcyjny.pdf",                       url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 9856614 },
+    { name: "Projekt instalacji elektrycznej i sanitarnej.pdf",url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 10695475 },
+    { name: "Charakterystyka energetyczna.pdf",                url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 1572864 },
+  ],
+  "Dom z Poddaszem Rustykalny 150": [
+    { name: "Projekt architektoniczno-budowlany.pdf",          url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 23396147 },
+    { name: "Projekt techniczny – część architektoniczna.pdf", url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 32935936 },
+    { name: "Projekt konstrukcyjny.pdf",                       url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 18664038 },
+    { name: "Projekt instalacji elektrycznej.pdf",             url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 10590617 },
+    { name: "Projekt instalacji sanitarnej.pdf",               url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 12167168 },
+    { name: "Projekt instalacji c.o. i wentylacji.pdf",        url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 9754419 },
+    { name: "Charakterystyka energetyczna.pdf",                url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 2306867 },
+    { name: "Kosztorys orientacyjny.pdf",                      url: SAMPLE_PDF_URL, mime_type: "application/pdf", size: 1363149 },
+  ],
+}
+
 export default async function seedHousePlans({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const housePlanService = container.resolve(HOUSE_PLAN_MODULE)
@@ -472,4 +511,32 @@ export default async function seedHousePlans({ container }: ExecArgs) {
   }
 
   logger.info('Sketch images seeded successfully.')
+
+  // Seed downloadable files
+  logger.info('Seeding house plan files...')
+
+  for (const plan of allPlans) {
+    const fileEntries = PLAN_FILES[plan.title]
+    if (!fileEntries?.length) continue
+
+    const existing = await housePlanService.listHousePlanFiles({ house_plan_id: plan.id })
+    if (existing.length > 0) {
+      logger.info(`Files for "${plan.title}" already seeded (${existing.length}), skipping.`)
+      continue
+    }
+
+    await housePlanService.createHousePlanFiles(
+      fileEntries.map((entry, i) => ({
+        house_plan_id: plan.id,
+        url: entry.url,
+        name: entry.name,
+        mime_type: entry.mime_type,
+        size: entry.size,
+        sort_order: i,
+      }))
+    )
+    logger.info(`Seeded ${fileEntries.length} file(s) for "${plan.title}"`)
+  }
+
+  logger.info('House plan files seeded successfully.')
 }

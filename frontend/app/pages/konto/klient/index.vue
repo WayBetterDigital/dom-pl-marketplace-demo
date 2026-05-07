@@ -2,6 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { useCustomerService } from '~/composables/services/useCustomerService'
 import { useAuthService } from '~/composables/services/useAuthService'
+import { useCustomerDownloadService } from '~/composables/services/useCustomerDownloadService'
 import type { AppOrder } from '~/types/order'
 
 definePageMeta({ middleware: 'auth' })
@@ -13,10 +14,26 @@ type OrderRow = {
   date: string
   status: string
   amount: string
+  plans: { id: string; title: string }[]
 }
 
 const { customer, logout } = useAuthService()
 const { getCustomerOrders } = useCustomerService()
+const { downloadZip } = useCustomerDownloadService()
+const toast = useToast()
+
+const downloadingPlanId = ref<string | null>(null)
+
+async function handleDownloadZip(planId: string, planTitle: string) {
+  downloadingPlanId.value = planId
+  try {
+    await downloadZip(planId, planTitle)
+  } catch {
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać archiwum.', color: 'error' })
+  } finally {
+    downloadingPlanId.value = null
+  }
+}
 
 async function handleLogout() {
   await logout()
@@ -74,6 +91,14 @@ const recentOrders = computed<OrderRow[]>(() =>
   (ordersData.value ?? []).slice(0, 10).map((o: AppOrder) => {
     const itemTotal = o.items.reduce((sum, i) => sum + Number(i.unit_price) * Number(i.quantity), 0)
     const total = Number(o.total)
+    const seen = new Set<string>()
+    const plans: { id: string, title: string }[] = []
+    for (const item of o.items) {
+      if (item.house_plan_id && !seen.has(item.house_plan_id)) {
+        seen.add(item.house_plan_id)
+        plans.push({ id: item.house_plan_id, title: item.title })
+      }
+    }
     return {
       id: '#' + o.id.slice(-6).toUpperCase(),
       orderId: o.id,
@@ -82,7 +107,8 @@ const recentOrders = computed<OrderRow[]>(() =>
         : `${o.items.length} produkty`,
       date: new Date(o.created_at).toLocaleDateString('pl-PL'),
       status: statusLabel(o.status),
-      amount: formatPLN(total > 0 ? total : itemTotal)
+      amount: formatPLN(total > 0 ? total : itemTotal),
+      plans
     }
   })
 )
@@ -208,14 +234,29 @@ const statusColor = (status: string) => {
               </span>
             </template>
             <template #actions-cell="{ row }">
-              <UButton
-                variant="ghost"
-                size="xs"
-                icon="i-lucide-eye"
-                :to="`/konto/klient/zamowienie/${row.original.orderId}`"
-              >
-                Szczegóły
-              </UButton>
+              <div class="flex items-center gap-1">
+                <UButton
+                  v-for="plan in row.original.plans"
+                  :key="plan.id"
+                  variant="ghost"
+                  size="xs"
+                  icon="i-lucide-archive"
+                  :loading="downloadingPlanId === plan.id"
+                  :disabled="downloadingPlanId !== null"
+                  class="cursor-pointer"
+                  @click="handleDownloadZip(plan.id, plan.title)"
+                >
+                  Pobierz
+                </UButton>
+                <UButton
+                  variant="ghost"
+                  size="xs"
+                  icon="i-lucide-eye"
+                  :to="`/konto/klient/zamowienie/${row.original.orderId}`"
+                >
+                  Szczegóły
+                </UButton>
+              </div>
             </template>
           </UTable>
         </UCard>

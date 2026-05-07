@@ -15,7 +15,7 @@ const vendorId = route.query.vendorId as string
 const toast = useToast()
 
 const housePlanService = useHousePlanService()
-const { getFiles, uploadFile, deleteFile } = useFileService()
+const { getFiles, uploadFile, deleteFile, downloadZip } = useFileService()
 
 const { data: plan, error } = await useAsyncData(
   `house-plan-${id}`,
@@ -33,7 +33,20 @@ const { data: files, refresh } = await useAsyncData(
 
 const uploadingFiles = ref<{ name: string, progress: boolean }[]>([])
 const deletingId = ref<string | null>(null)
+const downloadingId = ref<string | null>(null)
+const downloadingZip = ref(false)
 const isUploading = computed(() => uploadingFiles.value.length > 0)
+
+async function handleDownloadZip() {
+  downloadingZip.value = true
+  try {
+    await downloadZip(id, plan.value?.title ?? id)
+  } catch {
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać archiwum.', color: 'error' })
+  } finally {
+    downloadingZip.value = false
+  }
+}
 
 async function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
@@ -62,7 +75,12 @@ async function handleFileChange(e: Event) {
   await refresh()
 }
 
-async function handleDownload(url: string, name: string) {
+function handlePreview(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+async function handleDownload(fileId: string, url: string, name: string) {
+  downloadingId.value = fileId
   try {
     const res = await fetch(url)
     const blob = await res.blob()
@@ -70,10 +88,14 @@ async function handleDownload(url: string, name: string) {
     const a = document.createElement('a')
     a.href = blobUrl
     a.download = name
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(blobUrl)
   } catch {
-    window.open(url, '_blank')
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać pliku.', color: 'error' })
+  } finally {
+    downloadingId.value = null
   }
 }
 
@@ -103,11 +125,27 @@ async function handleDelete(fileId: string, fileName: string) {
     <VendorPlanTabNav :plan-id="id" :vendor-id="vendorId" class="mb-8" />
 
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-default">{{ plan?.title }}</h1>
-      <label class="cursor-pointer">
-        <input type="file" multiple class="hidden" @change="handleFileChange">
-        <UButton as="span" icon="i-lucide-upload" size="sm" :loading="isUploading">Wgraj pliki</UButton>
-      </label>
+      <h1 class="text-2xl font-bold text-default">
+        {{ plan?.title }}
+      </h1>
+      <div class="flex items-center gap-2">
+        <UButton
+          v-if="files?.length"
+          icon="i-lucide-archive"
+          size="sm"
+          variant="outline"
+          :loading="downloadingZip"
+          :disabled="downloadingZip"
+          class="cursor-pointer"
+          @click="handleDownloadZip"
+        >
+          Pobierz wszystko (.zip)
+        </UButton>
+        <label class="cursor-pointer">
+          <input type="file" multiple class="hidden" @change="handleFileChange">
+          <UButton as="span" icon="i-lucide-upload" size="sm" :loading="isUploading">Wgraj pliki</UButton>
+        </label>
+      </div>
     </div>
 
     <div v-if="uploadingFiles.length" class="flex flex-col gap-2 mb-4">
@@ -121,7 +159,10 @@ async function handleDelete(fileId: string, fileName: string) {
       </div>
     </div>
 
-    <div v-if="!files?.length && !isUploading" class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center">
+    <div
+      v-if="!files?.length && !isUploading"
+      class="flex flex-col items-center justify-center gap-4 py-24 border border-dashed border-default rounded-xl text-center"
+    >
       <UIcon name="i-lucide-folder-open" class="size-12 text-muted" />
       <div>
         <p class="text-default font-medium">Brak plików</p>
@@ -136,13 +177,43 @@ async function handleDelete(fileId: string, fileName: string) {
         class="group flex items-center gap-4 px-4 py-3 rounded-xl border border-default hover:bg-muted/50 transition-colors"
       >
         <UIcon :name="fileIcon(file.mime_type)" :class="['size-8 shrink-0', fileIconColor(file.mime_type)]" />
+
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-default truncate">{{ file.name }}</p>
           <p class="text-xs text-muted">{{ formatFileSize(file.size) }}</p>
         </div>
-        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <UButton icon="i-lucide-download" size="xs" color="neutral" variant="ghost" class="cursor-pointer" @click="handleDownload(file.url, file.name)" />
-          <UButton icon="i-lucide-trash-2" size="xs" color="error" variant="ghost" :loading="deletingId === file.id" class="cursor-pointer" @click="handleDelete(file.id, file.name)" />
+
+        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <UButton
+            icon="i-lucide-eye"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            aria-label="Podgląd"
+            class="cursor-pointer"
+            @click="handlePreview(file.url)"
+          />
+          <UButton
+            icon="i-lucide-download"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            aria-label="Pobierz"
+            :loading="downloadingId === file.id"
+            class="cursor-pointer"
+            @click="handleDownload(file.id, file.url, file.name)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            size="xs"
+            color="error"
+            variant="ghost"
+            aria-label="Usuń"
+            :loading="deletingId === file.id"
+            :disabled="deletingId !== null"
+            class="cursor-pointer"
+            @click="handleDelete(file.id, file.name)"
+          />
         </div>
       </div>
     </div>
