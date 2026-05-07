@@ -12,9 +12,17 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.status(404).json({ message: "Plik nie znaleziony" })
   }
 
+  const publicBase = process.env.S3_FILE_URL?.replace(/\/$/, '')
+  const internalBase = process.env.S3_ENDPOINT && process.env.S3_BUCKET
+    ? `${process.env.S3_ENDPOINT.replace(/\/$/, '')}/${process.env.S3_BUCKET}`
+    : undefined
+  const fetchUrl = (publicBase && internalBase && file.url.startsWith(publicBase))
+    ? file.url.replace(publicBase, internalBase)
+    : file.url
+
   let upstream: Response
   try {
-    upstream = await fetch(file.url)
+    upstream = await fetch(fetchUrl)
   } catch {
     return res.status(502).json({ message: "Nie udało się pobrać pliku ze źródła" })
   }
