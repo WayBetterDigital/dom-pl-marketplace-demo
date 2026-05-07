@@ -1234,7 +1234,8 @@ const FilesSection = ({ housePlanId }: { housePlanId: string }) => {
   const handleDownload = async (file: HousePlanFile) => {
     setDownloadingId(file.id)
     try {
-      const res = await fetch(resolveUrl(file.url))
+      const res = await fetch(`/admin/house-plans/${housePlanId}/files/${file.id}/download`)
+      if (!res.ok) throw new Error()
       const blob = await res.blob()
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement("a")

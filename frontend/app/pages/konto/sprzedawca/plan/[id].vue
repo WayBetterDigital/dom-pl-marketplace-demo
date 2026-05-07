@@ -13,7 +13,8 @@ import {
   useFileService,
   formatFileSize,
   fileIcon,
-  fileIconColor
+  fileIconColor,
+  type HousePlanFile
 } from '~/composables/services/useFileService'
 
 definePageMeta({ middleware: 'vendor-auth' })
@@ -26,7 +27,7 @@ const planId = route.params.id as string
 const { getHousePlan } = useHousePlanService()
 const { updateVendorHousePlan } = useVendorService()
 const { getGallery, uploadGalleryImage, updateGalleryImage, deleteGalleryImage } = useGalleryService()
-const { getFiles, uploadFile, deleteFile } = useFileService()
+const { getFiles, uploadFile, deleteFile, downloadFile } = useFileService()
 
 const { data: plan, error, refresh } = await useAsyncData(`vendor-plan-edit-${planId}`, () => getHousePlan(planId))
 if (error.value || !plan.value) throw createError({ statusCode: 404, statusMessage: 'Projekt nie znaleziony', fatal: true })
@@ -248,6 +249,22 @@ async function handleFileDelete(fileId: string, fileName: string) {
     deletingFileId.value = null
   }
 }
+
+function handleFilePreview(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+const downloadingFileId = ref<string | null>(null)
+async function handleFileDownload(file: HousePlanFile) {
+  downloadingFileId.value = file.id
+  try {
+    await downloadFile(planId, file)
+  } catch {
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać pliku.', color: 'error' })
+  } finally {
+    downloadingFileId.value = null
+  }
+}
 </script>
 
 <template>
@@ -353,30 +370,39 @@ async function handleFileDelete(fileId: string, fileName: string) {
       <!-- Prawa kolumna: tytuł, cena, pola -->
       <div class="space-y-8">
         <div>
-          <input
+          <UInput
             v-model="form.title"
-            size="xl"
+            size="2xl"
             placeholder="Nazwa projektu"
-            class="mb-2"
+            class="mb-2 w-full text-3xl"
             :color="errors.title ? 'error' : 'neutral'"
           />
+          <br>
           <UInput
             v-model="form.price"
             type="number"
             placeholder="Cena (PLN)"
+            class="text-xl"
             :color="errors.price ? 'error' : 'neutral'"
-          />
+          /> zł
         </div>
 
         <UCard v-if="plan?.vendor">
           <template #header>
-            <h3 class="text-lg font-semibold">Sprzedawca</h3>
+            <h3 class="text-lg font-semibold">
+              Sprzedawca
+            </h3>
           </template>
           <div class="flex items-start gap-4">
             <UAvatar :alt="plan.vendor.company_name" size="lg" />
             <div class="flex-1 min-w-0">
-              <p class="font-semibold text-default truncate">{{ plan.vendor.company_name }}</p>
-              <p class="text-sm text-muted">{{ plan.vendor.first_name }} {{ plan.vendor.last_name }}</p>
+              <p class="font-semibold text-default truncate">
+                {{ plan.vendor.company_name }}
+              </p>
+              <p class="text-sm text-muted">
+                {{ plan.vendor.first_name }}
+                {{ plan.vendor.last_name }}
+              </p>
             </div>
           </div>
         </UCard>
@@ -814,7 +840,18 @@ async function handleFileDelete(fileId: string, fileName: string) {
               variant="ghost"
               aria-label="Podgląd"
               class="cursor-pointer"
-              @click="window.open(file.url, '_blank', 'noopener,noreferrer')"
+              @click="handleFilePreview(file.url)"
+            />
+            <UButton
+              icon="i-lucide-download"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              aria-label="Pobierz"
+              :loading="downloadingFileId === file.id"
+              :disabled="downloadingFileId !== null"
+              class="cursor-pointer"
+              @click="handleFileDownload(file)"
             />
             <UButton
               icon="i-lucide-trash-2"
