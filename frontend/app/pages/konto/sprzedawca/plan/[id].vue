@@ -87,7 +87,8 @@ const categoryOptions = GALLERY_CATEGORIES.map(c => ({ label: CATEGORY_LABELS[c]
 
 const { data: galleryImages, refresh: refreshGallery } = await useAsyncData(
   `gallery-edit-${planId}`,
-  () => getGallery(planId)
+  () => getGallery(planId),
+  { server: false }
 )
 
 const availableCategories = computed(() =>
@@ -206,7 +207,8 @@ async function handleGalleryDelete(img: GalleryImage) {
 // ── Files ─────────────────────────────────────────────────────────────────────
 const { data: files, refresh: refreshFiles } = await useAsyncData(
   `files-edit-${planId}`,
-  () => getFiles(planId)
+  () => getFiles(planId),
+  { server: false }
 )
 
 const uploadingFiles = ref<{ name: string }[]>([])
@@ -227,8 +229,9 @@ async function handleFileChange(e: Event) {
     try {
       await uploadFile(planId, file)
       toast.add({ title: 'Plik dodany', description: file.name, color: 'success' })
-    } catch {
-      toast.add({ title: 'Błąd', description: `Nie udało się wgrać ${file.name}`, color: 'error' })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : `Nie udało się wgrać ${file.name}`
+      toast.add({ title: 'Błąd', description: msg, color: 'error' })
     } finally {
       uploadingFiles.value = uploadingFiles.value.filter(f => f.name !== file.name)
     }
