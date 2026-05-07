@@ -2,25 +2,7 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import archiver from "archiver"
 import { HOUSE_PLAN_MODULE } from "../../../../../../modules/house_plan"
 import type HousePlanModuleService from "../../../../../../modules/house_plan/service"
-
-// File URLs use the public S3_FILE_URL host (e.g. http://localhost:9090).
-// Inside Docker the backend cannot reach that host; replace the origin with
-// S3_ENDPOINT (e.g. http://minio:9000) so fetches go via the internal network.
-function toInternalUrl(publicUrl: string): string {
-  const fileUrl = process.env.S3_FILE_URL
-  const endpoint = process.env.S3_ENDPOINT
-  if (!fileUrl || !endpoint) return publicUrl
-  try {
-    const publicOrigin = new URL(fileUrl).origin
-    const internalOrigin = new URL(endpoint).origin
-    if (publicUrl.startsWith(publicOrigin)) {
-      return internalOrigin + publicUrl.slice(publicOrigin.length)
-    }
-  } catch {
-    // ignore malformed env values
-  }
-  return publicUrl
-}
+import { resolveInternalFileUrl } from "../../../../../../lib/file-url"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params
@@ -53,11 +35,16 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
   archive.pipe(res as any)
 
-  for (const file of files) {
-    const response = await fetch(toInternalUrl(file.url))
-    if (!response.ok) continue
-    const buffer = Buffer.from(await response.arrayBuffer())
-    archive.append(buffer, { name: file.name })
+  const fetched = await Promise.all(
+    files.map(async (file) => {
+      const response = await fetch(resolveInternalFileUrl(file.url))
+      if (!response.ok) return null
+      return { name: file.name, buffer: Buffer.from(await response.arrayBuffer()) }
+    })
+  )
+
+  for (const item of fetched) {
+    if (item) archive.append(item.buffer, { name: item.name })
   }
 
   await archive.finalize()

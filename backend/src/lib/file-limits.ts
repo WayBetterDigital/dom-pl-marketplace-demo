@@ -14,6 +14,9 @@ export const FILE_LIMITS = {
   sketches: 10 * MB,
 } as const
 
+/** Maximum number of downloadable files per house plan */
+export const MAX_PLAN_FILES = 10
+
 /**
  * Body-parser string limits for Base64 JSON routes.
  * Base64 adds ~33% overhead, so the body limit must be larger than the file limit.

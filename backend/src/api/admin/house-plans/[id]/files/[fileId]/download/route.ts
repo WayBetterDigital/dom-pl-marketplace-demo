@@ -1,6 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { HOUSE_PLAN_MODULE } from "../../../../../../../modules/house_plan"
 import type HousePlanModuleService from "../../../../../../../modules/house_plan/service"
+import { resolveInternalFileUrl } from "../../../../../../../lib/file-url"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id, fileId } = req.params
@@ -12,13 +13,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.status(404).json({ message: "Plik nie znaleziony" })
   }
 
-  const publicBase = process.env.S3_FILE_URL?.replace(/\/$/, '')
-  const internalBase = process.env.S3_ENDPOINT && process.env.S3_BUCKET
-    ? `${process.env.S3_ENDPOINT.replace(/\/$/, '')}/${process.env.S3_BUCKET}`
-    : undefined
-  const fetchUrl = (publicBase && internalBase && file.url.startsWith(publicBase))
-    ? file.url.replace(publicBase, internalBase)
-    : file.url
+  const fetchUrl = resolveInternalFileUrl(file.url)
 
   let upstream: Response
   try {

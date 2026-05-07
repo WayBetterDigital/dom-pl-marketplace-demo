@@ -3,6 +3,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { IFileModuleService } from "@medusajs/framework/types"
 import { HOUSE_PLAN_MODULE } from "../../../../../modules/house_plan"
 import type HousePlanModuleService from "../../../../../modules/house_plan/service"
+import { MAX_PLAN_FILES } from "../../../../../lib/file-limits"
 
 async function resolveHousePlanId(productId: string, query: any): Promise<string | null> {
   const { data: products } = await query.graph({
@@ -50,8 +51,14 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(404).json({ message: "Brak powiązanego planu domu" })
   }
 
-  const fileService = req.scope.resolve<IFileModuleService>(Modules.FILE)
   const housePlanService = req.scope.resolve<HousePlanModuleService>(HOUSE_PLAN_MODULE)
+
+  const existingFiles = await housePlanService.listHousePlanFiles({ house_plan_id: housePlanId })
+  if (existingFiles.length >= MAX_PLAN_FILES) {
+    return res.status(422).json({ message: `Maksymalna liczba plików to ${MAX_PLAN_FILES}` })
+  }
+
+  const fileService = req.scope.resolve<IFileModuleService>(Modules.FILE)
 
   const uploaded = await fileService.createFiles({
     filename: multerFile.originalname,
@@ -61,7 +68,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   })
 
   const url = (uploaded as any).url as string
-  const existingFiles = await housePlanService.listHousePlanFiles({ house_plan_id: housePlanId })
 
   const file = await housePlanService.createHousePlanFiles({
     house_plan_id: housePlanId,
