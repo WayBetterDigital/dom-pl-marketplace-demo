@@ -1209,18 +1209,11 @@ const FilesSection = ({ housePlanId }: { housePlanId: string }) => {
       }
       setUploading(true)
       try {
-        const baseUrl = (import.meta.env.VITE_BACKEND_URL ?? "").replace(/\/$/, "")
-        const form = new FormData()
-        form.append("file", file)
-        const res = await fetch(`${baseUrl}/admin/house-plans/${housePlanId}/files`, {
+        const content = await toBase64(file)
+        await sdk.client.fetch(`/admin/house-plans/${housePlanId}/files`, {
           method: "POST",
-          credentials: "include",
-          body: form,
+          body: { filename: file.name, mimeType: file.type, content, size: file.size },
         })
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}))
-          throw new Error((err as any).message || `Błąd ${res.status}`)
-        }
         queryClient.invalidateQueries({ queryKey: filesKey })
         toast.success(`${file.name} — dodano`)
       } catch (err: any) {

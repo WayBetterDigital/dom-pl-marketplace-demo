@@ -21,4 +21,5 @@ export const FILE_LIMITS = {
 export const BODY_LIMITS = {
   gallery: "15mb",
   sketches: "15mb",
+  planFiles: "50mb",
 } as const
