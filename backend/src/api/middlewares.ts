@@ -166,8 +166,7 @@ export default defineMiddlewares({
     {
       matcher: "/admin/house-plans/:id/files",
       method: "POST",
-      bodyParser: false,
-      middlewares: [planFileUpload.single("file")],
+      bodyParser: { sizeLimit: BODY_LIMITS.planFiles },
     },
     {
       matcher: "/admin/products/:id/sketches",

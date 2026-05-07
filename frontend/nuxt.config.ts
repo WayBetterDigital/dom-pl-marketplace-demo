@@ -14,12 +14,14 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
-    // Server-only: used by SSR inside Docker (overridden by NUXT_MEDUSA_BASE_URL)
     medusaBaseUrl: 'http://localhost:9000',
+    // public file URLs use localhost:9090, but containers must use minio:9000
+    fileStoragePublicBase: '', // e.g. http://localhost:9090/medusa-bucket
+    fileStorageInternalBase: '', // e.g. http://minio:9000/medusa-bucket
     public: {
       medusa: {
-        baseUrl: 'http://localhost:9000', // overridden by NUXT_PUBLIC_MEDUSA_BASE_URL
-        publishableKey: '' // overridden by NUXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+        baseUrl: 'http://localhost:9000',
+        publishableKey: ''
       }
     }
   },

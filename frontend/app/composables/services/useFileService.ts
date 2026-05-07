@@ -91,5 +91,20 @@ export function useFileService() {
     )
   }
 
-  return { getFiles, uploadFile, deleteFile, downloadZip }
+  async function downloadFile(planId: string, file: HousePlanFile): Promise<void> {
+    // Nuxt server route proxies the request server-side — avoids CORS
+    const res = await fetch(`/file-download/${planId}/${file.id}`)
+    if (!res.ok) throw new Error('Błąd pobierania pliku')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = file.name
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  }
+
+  return { getFiles, uploadFile, deleteFile, downloadZip, downloadFile }
 }

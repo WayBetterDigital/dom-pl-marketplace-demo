@@ -68,6 +68,8 @@ services:
       - NUXT_PUBLIC_MEDUSA_BASE_URL=http://localhost:9000
       - NUXT_MEDUSA_BASE_URL=http://medusa:9000
       - NUXT_HOST=0.0.0.0
+      - NUXT_FILE_STORAGE_PUBLIC_BASE=http://localhost:9090/medusa-bucket
+      - NUXT_FILE_STORAGE_INTERNAL_BASE=http://minio:9000/medusa-bucket
     volumes:
       - ./frontend:/app
       - /app/node_modules

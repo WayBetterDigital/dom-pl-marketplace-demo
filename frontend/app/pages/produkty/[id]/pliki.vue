@@ -10,7 +10,8 @@ import {
   useFileService,
   formatFileSize,
   fileIcon,
-  fileIconColor
+  fileIconColor,
+  type HousePlanFile
 } from '~/composables/services/useFileService'
 
 const route = useRoute()
@@ -20,7 +21,7 @@ const housePlanService = useHousePlanService()
 const { customer, getSession } = useAuthService()
 const { vendor, restoreSession: restoreVendorSession } = useVendorAuthService()
 const { getPurchasedFiles, downloadZip: downloadZipAsCustomer } = useCustomerDownloadService()
-const { getFiles, downloadZip: downloadZipAsVendor } = useFileService()
+const { getFiles, downloadZip: downloadZipAsVendor, downloadFile } = useFileService()
 
 const { data: plan, error } = await useAsyncData(
   `house-plan-${id}`,
@@ -86,18 +87,19 @@ async function handleDownloadZip() {
   }
 }
 
-async function handleDownloadFile(url: string, name: string) {
+function handlePreviewFile(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+const downloadingFileId = ref<string | null>(null)
+async function handleDownloadFile(file: HousePlanFile) {
+  downloadingFileId.value = file.id
   try {
-    const res = await fetch(url)
-    const blob = await res.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-    a.download = name
-    a.click()
-    URL.revokeObjectURL(blobUrl)
+    await downloadFile(id, file)
   } catch {
-    window.open(url, '_blank')
+    toast.add({ title: 'Błąd', description: 'Nie udało się pobrać pliku.', color: 'error' })
+  } finally {
+    downloadingFileId.value = null
   }
 }
 </script>
@@ -226,7 +228,7 @@ async function handleDownloadFile(url: string, name: string) {
         <div
           v-for="file in files"
           :key="file.id"
-          class="group flex items-center gap-4 px-4 py-3 rounded-xl border border-default hover:bg-muted/50 transition-colors"
+          class="flex items-center gap-4 px-4 py-3 rounded-xl border border-default hover:bg-muted/50 transition-colors"
         >
           <UIcon
             :name="fileIcon(file.mime_type)"
@@ -242,15 +244,26 @@ async function handleDownloadFile(url: string, name: string) {
             </p>
           </div>
 
-          <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+          <div class="flex items-center gap-1 shrink-0">
+            <UButton
+              icon="i-lucide-eye"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              aria-label="Podgląd"
+              class="cursor-pointer"
+              @click="handlePreviewFile(file.url)"
+            />
             <UButton
               icon="i-lucide-download"
               size="xs"
               color="neutral"
               variant="ghost"
+              :loading="downloadingFileId === file.id"
+              :disabled="downloadingFileId !== null"
               aria-label="Pobierz"
               class="cursor-pointer"
-              @click="handleDownloadFile(file.url, file.name)"
+              @click="handleDownloadFile(file)"
             />
           </div>
         </div>
