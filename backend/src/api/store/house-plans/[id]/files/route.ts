@@ -25,6 +25,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(400).json({ message: "Wymagany plik (pole: file)" })
   }
 
+  const filename = Buffer.from(multerFile.originalname, "latin1").toString("utf8")
+
   const housePlanService = req.scope.resolve<HousePlanModuleService>(HOUSE_PLAN_MODULE)
 
   const existingFiles = await housePlanService.listHousePlanFiles({ house_plan_id: id })
@@ -35,7 +37,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const fileService = req.scope.resolve<IFileModuleService>(Modules.FILE)
 
   const uploaded = await fileService.createFiles({
-    filename: multerFile.originalname,
+    filename,
     mimeType: multerFile.mimetype,
     content: multerFile.buffer.toString("base64"),
     access: "public",
@@ -45,7 +47,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const file = await housePlanService.createHousePlanFiles({
     house_plan_id: id,
     url,
-    name: multerFile.originalname,
+    name: filename,
     mime_type: multerFile.mimetype,
     size: multerFile.size,
     sort_order: existingFiles.length,
