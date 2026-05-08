@@ -26,7 +26,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const paymentModule = req.scope.resolve<IPaymentModuleService>(Modules.PAYMENT)
 
   const actionResult = await paymentModule.getWebhookActionAndData({
-    provider: "pp_przelewy24",
+    provider: "pp_przelewy24_default",
     payload: {
       data: req.body as Record<string, unknown>,
       rawData: JSON.stringify(req.body),

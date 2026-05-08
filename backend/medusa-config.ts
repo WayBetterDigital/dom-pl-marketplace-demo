@@ -19,7 +19,7 @@ module.exports = defineConfig({
         providers: [
           {
             resolve: "./src/modules/przelewy24",
-            id: "przelewy24",
+            id: "default",
             options: {
               merchantId: Number(process.env.P24_MERCHANT_ID),
               posId: Number(process.env.P24_POS_ID),

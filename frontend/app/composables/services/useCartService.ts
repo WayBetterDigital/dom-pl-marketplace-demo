@@ -99,45 +99,60 @@ export function useCartService() {
     return updatedCart
   }
 
-  type CheckoutCustomer = { email: string, first_name: string, last_name: string }
+  type CheckoutCustomer = { email: string; first_name: string; last_name: string }
 
-  async function completeDummyCheckout(customer?: CheckoutCustomer) {
+  async function initiateP24Payment(
+    customer: CheckoutCustomer,
+  ): Promise<{ orderId: string; redirectUrl: string }> {
     const currentCart = await getCart()
-    if (!currentCart || !currentCart.items?.length) return
+    if (!currentCart?.items?.length) throw new Error('Koszyk jest pusty')
 
-    // 1. Set email and dummy address
+    // 1. Set customer email and shipping address
     await sdk.store.cart.update(currentCart.id, {
-      email: customer?.email ?? 'demo@example.com',
+      email: customer.email,
       shipping_address: {
-        first_name: customer?.first_name ?? 'Demo',
-        last_name: customer?.last_name ?? 'User',
-        address_1: 'Test Street 1',
-        city: 'Test City',
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        address_1: 'Dostawa cyfrowa',
+        city: 'Warszawa',
         country_code: 'pl',
-        postal_code: '00-000'
-      }
+        postal_code: '00-000',
+      },
     })
 
-    // 2. Fetch shipping options and add the first one
-    const { shipping_options } = await sdk.store.fulfillment.listCartOptions({ cart_id: currentCart.id })
+    // 2. Add shipping option (required by Medusa before payment)
+    const { shipping_options } = await sdk.store.fulfillment.listCartOptions({
+      cart_id: currentCart.id,
+    })
     if (shipping_options?.length) {
       await sdk.store.cart.addShippingMethod(currentCart.id, {
-        option_id: shipping_options[0].id
+        option_id: shipping_options[0].id,
       })
     }
 
-    // 3. Initiate payment session
-    await sdk.store.payment.initiatePaymentSession(currentCart, {
-      provider_id: 'pp_system_default' // The default manual provider in Medusa v2
+    // 3. Initiate P24 payment session — provider registers the transaction with P24
+    //    and stores the redirect URL in the payment session data
+    const { payment_collection } = await sdk.store.payment.initiatePaymentSession(currentCart, {
+      provider_id: 'pp_przelewy24_default',
     })
 
-    // 4. Complete cart
-    const { type, order } = await sdk.store.cart.complete(currentCart.id)
+    const session = payment_collection?.payment_sessions?.find(
+      (s: any) => (s.provider_id as string)?.includes('przelewy24'),
+    )
+    const redirectUrl = (session?.data as any)?.redirectUrl as string | undefined
+    if (!redirectUrl) throw new Error('Nie udało się uzyskać adresu płatności Przelewy24')
+
+    // 4. Complete cart — creates the order with payment_status: awaiting
+    //    (payment will be confirmed asynchronously via P24 IPN webhook)
+    const result = await sdk.store.cart.complete(currentCart.id)
+    if (result.type !== 'order' || !result.order?.id) {
+      throw new Error('Nie udało się złożyć zamówienia')
+    }
 
     saveCartId(null)
     cart.value = null
 
-    return order
+    return { orderId: result.order.id, redirectUrl }
   }
 
   return {
@@ -145,6 +160,6 @@ export function useCartService() {
     getCart,
     addToCart,
     removeFromCart,
-    completeDummyCheckout
+    initiateP24Payment,
   }
 }
