@@ -107,6 +107,11 @@ export function useCartService() {
     const currentCart = await getCart()
     if (!currentCart?.items?.length) throw new Error('Koszyk jest pusty')
 
+    // Fetch fresh cart state to check what's already been set up from a previous attempt
+    const { cart: freshCart } = await sdk.store.cart.retrieve(currentCart.id, {
+      fields: '*shipping_methods,*payment_collection,*payment_collection.payment_sessions',
+    })
+
     // 1. Set customer email and placeholder shipping address (digital delivery)
     await sdk.store.cart.update(currentCart.id, {
       email: customer.email,
@@ -120,22 +125,33 @@ export function useCartService() {
       },
     })
 
-    // 2. Add shipping option (required by Medusa before payment)
-    const { shipping_options } = await sdk.store.fulfillment.listCartOptions({ cart_id: currentCart.id })
-    if (shipping_options?.length) {
-      await sdk.store.cart.addShippingMethod(currentCart.id, { option_id: shipping_options[0].id })
+    // 2. Add shipping option only if not already present (prevents conflict on retry)
+    if (!(freshCart as any)?.shipping_methods?.length) {
+      const { shipping_options } = await sdk.store.fulfillment.listCartOptions({ cart_id: currentCart.id })
+      if (shipping_options?.length) {
+        await sdk.store.cart.addShippingMethod(currentCart.id, { option_id: shipping_options[0].id })
+      }
     }
 
-    // 3. Create Stripe P24 payment session — Stripe registers the PaymentIntent
-    //    and returns a client_secret needed to confirm the payment on the frontend
-    const { payment_collection } = await sdk.store.payment.initiatePaymentSession(currentCart, {
-      provider_id: 'pp_stripe-przelewy24_default',
-    })
-
-    const session = payment_collection?.payment_sessions?.find(
+    // 3. Reuse existing P24 session if present, otherwise create a new one
+    //    (prevents conflict when the user retries after a failed/abandoned attempt)
+    const existingSession = (freshCart as any)?.payment_collection?.payment_sessions?.find(
       (s: any) => s.provider_id === 'pp_stripe-przelewy24_default'
     )
-    const clientSecret = (session?.data as any)?.client_secret as string | undefined
+
+    let clientSecret: string | undefined
+    if (existingSession?.data) {
+      clientSecret = (existingSession.data as any)?.client_secret
+    } else {
+      const { payment_collection } = await sdk.store.payment.initiatePaymentSession(currentCart, {
+        provider_id: 'pp_stripe-przelewy24_default',
+      })
+      const session = payment_collection?.payment_sessions?.find(
+        (s: any) => s.provider_id === 'pp_stripe-przelewy24_default'
+      )
+      clientSecret = (session?.data as any)?.client_secret
+    }
+
     if (!clientSecret) throw new Error('Nie udało się zainicjować płatności Stripe')
 
     // 4. Complete cart — creates the order with payment_status: awaiting

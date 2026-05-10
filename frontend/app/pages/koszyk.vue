@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useCartService } from '~/composables/services/useCartService'
 import { useAuthService } from '~/composables/services/useAuthService'
+import { useStripe } from '~/composables/useStripe'
 
 const cartService = useCartService()
 const { customer } = useAuthService()
+const { getStripe } = useStripe()
 const router = useRouter()
 const toast = useToast()
 const isCheckingOut = ref(false)
@@ -44,25 +46,31 @@ const handleCheckout = async () => {
 
   isCheckingOut.value = true
   try {
-    await cartService.completeDummyCheckout(
-      customer.value
-        ? { email: customer.value.email, first_name: customer.value.first_name, last_name: customer.value.last_name }
-        : undefined
-    )
-    toast.add({
-      title: 'Sukces',
-      description: 'Zamówienie zostało złożone pomyślnie!',
-      color: 'success'
+    const { orderId, clientSecret } = await cartService.initiateStripeP24Payment({
+      email: customer.value.email,
+      first_name: customer.value.first_name ?? '',
+      last_name: customer.value.last_name ?? '',
     })
-    router.push('/konto/klient')
+
+    sessionStorage.setItem('stripe_order_id', orderId)
+
+    const stripe = await getStripe()
+    if (!stripe) throw new Error('Nie udało się załadować systemu płatności')
+
+    // Redirects to P24 bank selection — returns only on error
+    const { error } = await stripe.confirmP24Payment(clientSecret, {
+      payment_method: {
+        p24: { bank: 'other' },
+        billing_details: { email: customer.value.email },
+      },
+      return_url: `${window.location.origin}/platnosc/potwierdzenie`,
+    })
+
+    if (error) throw new Error(error.message)
+    // On success Stripe navigates away — isCheckingOut stays true intentionally
   } catch (error) {
-    console.error('Checkout failed:', error)
-    toast.add({
-      title: 'Błąd',
-      description: 'Wystąpił błąd podczas składania zamówienia.',
-      color: 'error'
-    })
-  } finally {
+    const msg = error instanceof Error ? error.message : 'Wystąpił błąd podczas składania zamówienia.'
+    toast.add({ title: 'Błąd płatności', description: msg, color: 'error' })
     isCheckingOut.value = false
   }
 }
