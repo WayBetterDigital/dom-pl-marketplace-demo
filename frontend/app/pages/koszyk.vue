@@ -44,27 +44,23 @@ const handleCheckout = async () => {
 
   isCheckingOut.value = true
   try {
-    await cartService.completeDummyCheckout(
-      customer.value
-        ? { email: customer.value.email, first_name: customer.value.first_name, last_name: customer.value.last_name }
-        : undefined
-    )
-    toast.add({
-      title: 'Sukces',
-      description: 'Zamówienie zostało złożone pomyślnie!',
-      color: 'success'
+    const { orderId, redirectUrl } = await cartService.initiateP24Payment({
+      email: customer.value.email,
+      first_name: customer.value.first_name ?? '',
+      last_name: customer.value.last_name ?? '',
     })
-    router.push('/konto/klient')
+
+    // Store the order ID so the confirmation page can retrieve it after the P24 redirect
+    sessionStorage.setItem('p24_order_id', orderId)
+
+    // Full redirect — P24 requires a real navigation, not client-side routing
+    window.location.href = redirectUrl
   } catch (error) {
-    console.error('Checkout failed:', error)
-    toast.add({
-      title: 'Błąd',
-      description: 'Wystąpił błąd podczas składania zamówienia.',
-      color: 'error'
-    })
-  } finally {
+    const msg = error instanceof Error ? error.message : 'Wystąpił błąd podczas składania zamówienia.'
+    toast.add({ title: 'Błąd płatności', description: msg, color: 'error' })
     isCheckingOut.value = false
   }
+  // Note: isCheckingOut is intentionally not reset on success — the page is leaving
 }
 </script>
 

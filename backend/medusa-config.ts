@@ -14,6 +14,26 @@ module.exports = defineConfig({
       resolve: "./src/modules/gallery",
     },
     {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/przelewy24",
+            id: "default",
+            options: {
+              merchantId: Number(process.env.P24_MERCHANT_ID),
+              posId: Number(process.env.P24_POS_ID),
+              crc: process.env.P24_CRC,
+              apiKey: process.env.P24_API_KEY,
+              sandbox: process.env.P24_SANDBOX !== "false",
+              returnUrl: process.env.P24_RETURN_URL,
+              notifyUrl: process.env.P24_NOTIFY_URL,
+            },
+          },
+        ],
+      },
+    },
+    {
       resolve: "@medusajs/medusa/file",
       options: {
         providers: [
