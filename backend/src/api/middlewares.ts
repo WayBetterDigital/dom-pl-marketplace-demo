@@ -1,4 +1,5 @@
 import {
+  authenticate,
   defineMiddlewares,
   validateAndTransformBody,
 } from "@medusajs/framework/http"
@@ -48,6 +49,16 @@ const HousePlanAdditionalDataSchema = z.object({
 
 export default defineMiddlewares({
   routes: [
+    {
+      matcher: "/store/customers/:id/orders",
+      method: "GET",
+      middlewares: [authenticate("customer", ["bearer", "session"])],
+    },
+    {
+      matcher: "/store/vendors/:id/orders",
+      method: "GET",
+      middlewares: [requireVendorOwnership],
+    },
     {
       method: "POST",
       matcher: "/admin/products",
