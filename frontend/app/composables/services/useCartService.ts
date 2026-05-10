@@ -48,10 +48,15 @@ export function useCartService() {
           })
           cartData = response.cart
         }
-        cart.value = cartData
-        // Keep both storages in sync
-        saveCartId(storedId)
-        return cart.value
+
+        // Discard completed carts — they can't be modified, a new one must be created
+        if (cartData?.completed_at) {
+          saveCartId(null)
+        } else {
+          cart.value = cartData
+          saveCartId(storedId)
+          return cart.value
+        }
       } catch (e) {
         console.error('Failed to retrieve cart:', e)
         saveCartId(null)
