@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useCartService } from '~/composables/services/useCartService'
 import { useOrderService } from '~/composables/services/useOrderService'
 
 const route = useRoute()
+const cartService = useCartService()
 const orderService = useOrderService()
 
 const orderId = ref<string | null>(null)
@@ -13,14 +15,14 @@ const MAX_POLLS = 8
 const isSuccess = computed(() => ['captured', 'paid'].includes(order.value?.payment_status))
 const isPending = computed(() => ['awaiting', 'not_paid'].includes(order.value?.payment_status))
 
-async function loadOrder(id: string) {
+async function pollOrder(id: string) {
   try {
     order.value = await orderService.getOrder(id)
     if (isSuccess.value) {
       status.value = 'success'
     } else if (isPending.value && pollCount.value < MAX_POLLS) {
       pollCount.value++
-      setTimeout(() => loadOrder(id), 4000)
+      setTimeout(() => pollOrder(id), 4000)
     } else {
       status.value = pollCount.value >= MAX_POLLS ? 'pending' : 'error'
     }
@@ -29,22 +31,23 @@ async function loadOrder(id: string) {
   }
 }
 
-onMounted(() => {
-  // Stripe appends redirect_status to the return URL — use it for an early check
+onMounted(async () => {
+  // Stripe appends redirect_status to the return URL — bail out immediately on failure
   const redirectStatus = route.query.redirect_status as string | undefined
   if (redirectStatus === 'failed' || redirectStatus === 'canceled') {
     status.value = 'error'
     return
   }
 
-  const stored = sessionStorage.getItem('stripe_order_id')
-  if (!stored) {
+  // Complete the cart now that the user has returned from Stripe/P24.
+  // At this point the PaymentIntent is authorized so Medusa can create the order.
+  try {
+    const { orderId: id } = await cartService.completeStripeCheckout()
+    orderId.value = id
+    await pollOrder(id)
+  } catch {
     status.value = 'error'
-    return
   }
-  sessionStorage.removeItem('stripe_order_id')
-  orderId.value = stored
-  loadOrder(stored)
 })
 </script>
 
@@ -53,7 +56,7 @@ onMounted(() => {
     <!-- Loading -->
     <div v-if="status === 'loading'" class="flex flex-col items-center gap-4">
       <UIcon name="i-lucide-loader-2" class="size-16 animate-spin text-primary" />
-      <p class="text-lg text-muted">Sprawdzamy status płatności...</p>
+      <p class="text-lg text-muted">Finalizujemy zamówienie...</p>
     </div>
 
     <!-- Success -->

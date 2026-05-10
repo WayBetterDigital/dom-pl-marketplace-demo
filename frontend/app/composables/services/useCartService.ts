@@ -108,7 +108,7 @@ export function useCartService() {
 
   async function initiateStripeP24Payment(
     customer: CheckoutCustomer
-  ): Promise<{ orderId: string; clientSecret: string }> {
+  ): Promise<{ clientSecret: string }> {
     const currentCart = await getCart()
     if (!currentCart?.items?.length) throw new Error('Koszyk jest pusty')
 
@@ -159,17 +159,27 @@ export function useCartService() {
 
     if (!clientSecret) throw new Error('Nie udało się zainicjować płatności Stripe')
 
-    // 4. Complete cart — creates the order with payment_status: awaiting
-    //    (payment confirmed asynchronously via Stripe webhook)
-    const result = await sdk.store.cart.complete(currentCart.id)
+    // Store cartId so the confirmation page can complete the cart after the Stripe redirect.
+    // completeCart must be called after the user returns — only then has Stripe authorized the payment.
+    sessionStorage.setItem('stripe_cart_id', currentCart.id)
+
+    return { clientSecret }
+  }
+
+  async function completeStripeCheckout(): Promise<{ orderId: string }> {
+    const cartId = sessionStorage.getItem('stripe_cart_id')
+    if (!cartId) throw new Error('Nie znaleziono aktywnej sesji płatności')
+
+    const result = await sdk.store.cart.complete(cartId)
     if (result.type !== 'order' || !result.order?.id) {
-      throw new Error('Nie udało się złożyć zamówienia')
+      throw new Error('Zamówienie jest w trakcie przetwarzania')
     }
 
+    sessionStorage.removeItem('stripe_cart_id')
     saveCartId(null)
     cart.value = null
 
-    return { orderId: result.order.id, clientSecret }
+    return { orderId: result.order.id }
   }
 
   return {
@@ -178,5 +188,6 @@ export function useCartService() {
     addToCart,
     removeFromCart,
     initiateStripeP24Payment,
+    completeStripeCheckout,
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useCartService } from '~/composables/services/useCartService'
 import { useAuthService } from '~/composables/services/useAuthService'
 import { useStripe } from '~/composables/useStripe'
@@ -8,8 +9,14 @@ const { customer } = useAuthService()
 const { getStripe } = useStripe()
 const router = useRouter()
 const toast = useToast()
-const isCheckingOut = ref(false)
+
 const removingItemId = ref<string | null>(null)
+const paymentStep = ref<'cart' | 'payment'>('cart')
+const isInitializingPayment = ref(false)
+const isCheckingOut = ref(false)
+const paymentElementRef = ref<HTMLElement | null>(null)
+const stripeRef = ref<Stripe | null>(null)
+const elementsRef = ref<StripeElements | null>(null)
 
 const { data: cart, refresh, pending } = await useAsyncData('cart', () => cartService.getCart(), { server: false })
 
@@ -25,15 +32,10 @@ const handleRemove = async (lineItemId: string) => {
   }
 }
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    maximumFractionDigits: 0
-  }).format(price)
-}
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 }).format(price)
 
-const handleCheckout = async () => {
+async function handleProceedToPayment() {
   if (!customer.value) {
     toast.add({
       title: 'Wymagane logowanie',
@@ -44,35 +46,54 @@ const handleCheckout = async () => {
     return router.push('/konto/logowanie-klient')
   }
 
-  isCheckingOut.value = true
+  isInitializingPayment.value = true
   try {
-    const { orderId, clientSecret } = await cartService.initiateStripeP24Payment({
+    const { clientSecret } = await cartService.initiateStripeP24Payment({
       email: customer.value.email,
       first_name: customer.value.first_name ?? '',
       last_name: customer.value.last_name ?? '',
     })
 
-    sessionStorage.setItem('stripe_order_id', orderId)
-
     const stripe = await getStripe()
     if (!stripe) throw new Error('Nie udało się załadować systemu płatności')
+    stripeRef.value = stripe
 
-    // Redirects to P24 bank selection — returns only on error
-    const { error } = await stripe.confirmP24Payment(clientSecret, {
-      payment_method: {
-        p24: { bank: 'other' },
-        billing_details: { email: customer.value.email },
-      },
-      return_url: `${window.location.origin}/platnosc/potwierdzenie`,
-    })
+    paymentStep.value = 'payment'
+    await nextTick()
 
-    if (error) throw new Error(error.message)
-    // On success Stripe navigates away — isCheckingOut stays true intentionally
+    const elements = stripe.elements({ clientSecret })
+    elementsRef.value = elements
+    elements.create('payment').mount(paymentElementRef.value!)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Wystąpił błąd podczas składania zamówienia.'
-    toast.add({ title: 'Błąd płatności', description: msg, color: 'error' })
+    const msg = error instanceof Error ? error.message : 'Wystąpił błąd podczas inicjowania płatności.'
+    toast.add({ title: 'Błąd', description: msg, color: 'error' })
+  } finally {
+    isInitializingPayment.value = false
+  }
+}
+
+async function handleCheckout() {
+  if (!stripeRef.value || !elementsRef.value) return
+
+  isCheckingOut.value = true
+  const { error } = await stripeRef.value.confirmPayment({
+    elements: elementsRef.value,
+    confirmParams: {
+      return_url: `${window.location.origin}/platnosc/potwierdzenie`,
+    },
+  })
+
+  if (error) {
+    toast.add({ title: 'Błąd płatności', description: error.message ?? 'Płatność nie powiodła się.', color: 'error' })
     isCheckingOut.value = false
   }
+  // On success Stripe navigates away — isCheckingOut stays true intentionally
+}
+
+function handleBack() {
+  elementsRef.value = null
+  stripeRef.value = null
+  paymentStep.value = 'cart'
 }
 </script>
 
@@ -136,7 +157,7 @@ const handleCheckout = async () => {
                 size="sm"
                 class="cursor-pointer"
                 :loading="removingItemId === item.id"
-                :disabled="removingItemId !== null"
+                :disabled="removingItemId !== null || paymentStep === 'payment'"
                 @click="handleRemove(item.id)"
               />
             </div>
@@ -151,15 +172,41 @@ const handleCheckout = async () => {
           <span class="font-bold text-2xl">{{ formatPrice(cart.subtotal || 0) }}</span>
         </div>
 
+        <!-- Step 1: proceed button -->
         <UButton
+          v-if="paymentStep === 'cart'"
           size="xl"
-          icon="i-lucide-check-circle"
-          :loading="isCheckingOut"
+          icon="i-lucide-credit-card"
+          :loading="isInitializingPayment"
           class="cursor-pointer"
-          @click="handleCheckout"
+          @click="handleProceedToPayment"
         >
-          Złóż zamówienie
+          Przejdź do płatności
         </UButton>
+
+        <!-- Step 2: Stripe Payment Element -->
+        <UCard v-else class="w-full sm:w-120">
+          <div class="space-y-4">
+            <div ref="paymentElementRef" />
+            <UButton
+              size="xl"
+              :loading="isCheckingOut"
+              class="cursor-pointer w-full justify-center"
+              @click="handleCheckout"
+            >
+              Zapłać {{ formatPrice(cart.subtotal || 0) }}
+            </UButton>
+            <UButton
+              variant="ghost"
+              size="sm"
+              :disabled="isCheckingOut"
+              class="cursor-pointer w-full justify-center"
+              @click="handleBack"
+            >
+              Wróć do koszyka
+            </UButton>
+          </div>
+        </UCard>
       </div>
     </div>
   </div>
