@@ -166,20 +166,29 @@ export function useCartService() {
     return { clientSecret }
   }
 
-  async function completeStripeCheckout(): Promise<{ orderId: string }> {
+  async function completeStripeCheckout(): Promise<{ orderId: string | null }> {
     const cartId = sessionStorage.getItem('stripe_cart_id')
-    if (!cartId) throw new Error('Nie znaleziono aktywnej sesji płatności')
-
-    const result = await sdk.store.cart.complete(cartId)
-    if (result.type !== 'order' || !result.order?.id) {
-      throw new Error('Zamówienie jest w trakcie przetwarzania')
-    }
-
     sessionStorage.removeItem('stripe_cart_id')
     saveCartId(null)
     cart.value = null
 
-    return { orderId: result.order.id }
+    if (!cartId) return { orderId: null }
+
+    try {
+      const result = await sdk.store.cart.complete(cartId)
+
+      if (result.type === 'order' && result.order?.id) {
+        return { orderId: result.order.id }
+      }
+
+      // type === 'cart' means the webhook already completed the cart and created the order.
+      // Try to get the order_id from the completed cart data.
+      const orderId = (result as any)?.cart?.order_id ?? (result as any)?.order_id ?? null
+      return { orderId }
+    } catch {
+      // Cart likely already completed by the Stripe webhook — order exists but we don't have its ID.
+      return { orderId: null }
+    }
   }
 
   return {

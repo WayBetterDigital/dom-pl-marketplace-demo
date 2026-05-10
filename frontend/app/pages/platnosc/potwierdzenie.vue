@@ -8,19 +8,19 @@ const orderService = useOrderService()
 
 const orderId = ref<string | null>(null)
 const order = ref<any>(null)
-const status = ref<'loading' | 'success' | 'pending' | 'error'>('loading')
+const status = ref<'loading' | 'success' | 'accepted' | 'pending' | 'error'>('loading')
 const pollCount = ref(0)
 const MAX_POLLS = 8
 
-const isSuccess = computed(() => ['captured', 'paid'].includes(order.value?.payment_status))
-const isPending = computed(() => ['awaiting', 'not_paid'].includes(order.value?.payment_status))
+const isPaymentSuccess = computed(() => ['captured', 'paid', 'authorized'].includes(order.value?.payment_status))
+const isPaymentPending = computed(() => ['awaiting', 'not_paid'].includes(order.value?.payment_status))
 
 async function pollOrder(id: string) {
   try {
     order.value = await orderService.getOrder(id)
-    if (isSuccess.value) {
+    if (isPaymentSuccess.value) {
       status.value = 'success'
-    } else if (isPending.value && pollCount.value < MAX_POLLS) {
+    } else if (isPaymentPending.value && pollCount.value < MAX_POLLS) {
       pollCount.value++
       setTimeout(() => pollOrder(id), 4000)
     } else {
@@ -32,20 +32,23 @@ async function pollOrder(id: string) {
 }
 
 onMounted(async () => {
-  // Stripe appends redirect_status to the return URL — bail out immediately on failure
   const redirectStatus = route.query.redirect_status as string | undefined
+
   if (redirectStatus === 'failed' || redirectStatus === 'canceled') {
     status.value = 'error'
     return
   }
 
-  // Complete the cart now that the user has returned from Stripe/P24.
-  // At this point the PaymentIntent is authorized so Medusa can create the order.
-  try {
-    const { orderId: id } = await cartService.completeStripeCheckout()
+  // Complete the cart (or retrieve the order if the webhook already completed it)
+  const { orderId: id } = await cartService.completeStripeCheckout()
+
+  if (id) {
     orderId.value = id
     await pollOrder(id)
-  } catch {
+  } else if (redirectStatus === 'succeeded') {
+    // Webhook completed the cart before we could — order exists but we don't have its ID yet
+    status.value = 'accepted'
+  } else {
     status.value = 'error'
   }
 })
@@ -59,7 +62,7 @@ onMounted(async () => {
       <p class="text-lg text-muted">Finalizujemy zamówienie...</p>
     </div>
 
-    <!-- Success -->
+    <!-- Success (with order details) -->
     <div v-else-if="status === 'success'" class="flex flex-col items-center gap-6">
       <div class="size-20 rounded-full bg-success/10 flex items-center justify-center">
         <UIcon name="i-lucide-check-circle-2" class="size-12 text-success" />
@@ -84,7 +87,22 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Pending -->
+    <!-- Accepted (webhook was faster — order exists but we don't have its ID) -->
+    <div v-else-if="status === 'accepted'" class="flex flex-col items-center gap-6">
+      <div class="size-20 rounded-full bg-success/10 flex items-center justify-center">
+        <UIcon name="i-lucide-check-circle-2" class="size-12 text-success" />
+      </div>
+      <div>
+        <h1 class="text-3xl font-bold text-default mb-2">Dziękujemy za zamówienie!</h1>
+        <p class="text-muted text-lg">Płatność przyjęta. Zamówienie znajdziesz w historii swojego konta.</p>
+      </div>
+      <div class="flex gap-3">
+        <UButton to="/produkty" variant="outline" icon="i-lucide-search">Przeglądaj projekty</UButton>
+        <UButton to="/konto/klient" icon="i-lucide-package">Moje zamówienia</UButton>
+      </div>
+    </div>
+
+    <!-- Pending (payment processing, webhook not yet fired) -->
     <div v-else-if="status === 'pending'" class="flex flex-col items-center gap-6">
       <div class="size-20 rounded-full bg-warning/10 flex items-center justify-center">
         <UIcon name="i-lucide-clock" class="size-12 text-warning" />
