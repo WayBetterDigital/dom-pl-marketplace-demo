@@ -18,10 +18,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const orderService = req.scope.resolve<any>(Modules.ORDER)
 
-  // query.graph → scalar fields + payment_collections.status (admin reads from payment_collections, not order.payment_status)
+  // query.graph → order meta + payment_collection IDs (no deep payment traversal — cross-module joins not wired)
   const { data: ordersMeta } = await query.graph({
     entity: "order",
-    fields: ["id", "status", "payment_status", "created_at", "total", "email", "payment_collections.status"],
+    fields: ["id", "status", "created_at", "total", "email", "payment_collections.id", "payment_collections.status"],
     filters: { customer_id: id },
   })
 
@@ -29,23 +29,58 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.json({ orders: [] })
   }
 
-  // listOrders → items with correct unit_price/quantity values + payment_status (query.graph doesn't expose it)
+  // listOrders → items with correct unit_price and quantity values
   const ordersWithItems: any[] = await orderService.listOrders(
     { customer_id: id },
-    {
-      select: ["id", "status", "payment_status", "customer_id", "created_at", "total", "email"],
-      relations: ["items"],
-      take: 100,
-    }
+    { relations: ["items"], take: 100 }
   )
 
   const itemsByOrderId = new Map<string, any[]>(
     ordersWithItems.map((o) => [o.id, o.items ?? []])
   )
 
-  const paymentStatusById = new Map<string, string | undefined>(
-    ordersWithItems.map((o) => [o.id, o.payment_status])
-  )
+  // Use Payment module service to get captures and refunds per collection
+  const paymentService = req.scope.resolve<any>(Modules.PAYMENT)
+
+  const collectionIds = (ordersMeta as any[])
+    .flatMap((o) => (o.payment_collections ?? []).map((c: any) => c.id))
+    .filter(Boolean)
+
+  const capturedByCollection = new Map<string, number>()
+  const refundedByCollection = new Map<string, number>()
+
+  if (collectionIds.length) {
+    const payments: any[] = await paymentService.listPayments(
+      { payment_collection_id: collectionIds },
+      { relations: ["captures", "refunds"] }
+    )
+    for (const p of payments) {
+      const colId = p.payment_collection_id
+      const cap = (p.captures ?? []).reduce((s: number, c: any) => s + toNum(c.amount), 0)
+      const ref = (p.refunds ?? []).reduce((s: number, r: any) => s + toNum(r.amount), 0)
+      capturedByCollection.set(colId, (capturedByCollection.get(colId) ?? 0) + cap)
+      refundedByCollection.set(colId, (refundedByCollection.get(colId) ?? 0) + ref)
+    }
+  }
+
+  function derivePaymentStatus(order: any): string {
+    const collections: any[] = order.payment_collections ?? []
+    let totalCaptured = 0
+    let totalRefunded = 0
+
+    for (const col of collections) {
+      totalCaptured += capturedByCollection.get(col.id) ?? 0
+      totalRefunded += refundedByCollection.get(col.id) ?? 0
+    }
+
+    if (totalCaptured > 0) {
+      if (totalRefunded >= totalCaptured) return "refunded"
+      if (totalRefunded > 0) return "partially_refunded"
+      return "captured"
+    }
+
+    return collections[0]?.status ?? "not_paid"
+  }
 
   // Collect product IDs for house plan enrichment
   const productIds = ordersWithItems
@@ -90,11 +125,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return {
       id: meta.id,
       status: meta.status,
-      // Prefer listOrders field, then payment_collections (what admin reads), then fallback
-      payment_status:
-        paymentStatusById.get(meta.id) ||
-        (meta as any).payment_collections?.[0]?.status ||
-        "not_paid",
+      payment_status: derivePaymentStatus(meta),
       created_at: meta.created_at,
       total: toNum(meta.total) || itemsTotal,
       email: meta.email,
