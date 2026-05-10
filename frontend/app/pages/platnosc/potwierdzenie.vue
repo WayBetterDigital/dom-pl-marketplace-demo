@@ -79,7 +79,7 @@ onMounted(() => {
         <UButton to="/produkty" variant="outline" icon="i-lucide-search">
           Przeglądaj projekty
         </UButton>
-        <UButton to="/konto/zamowienia" icon="i-lucide-package">
+        <UButton to="/konto/klient" icon="i-lucide-package">
           Moje zamówienia
         </UButton>
       </div>
@@ -105,7 +105,7 @@ onMounted(() => {
         <UButton to="/produkty" variant="outline" icon="i-lucide-search">
           Przeglądaj projekty
         </UButton>
-        <UButton to="/konto/zamowienia" icon="i-lucide-package">
+        <UButton to="/konto/klient" icon="i-lucide-package">
           Sprawdź zamówienia
         </UButton>
       </div>
