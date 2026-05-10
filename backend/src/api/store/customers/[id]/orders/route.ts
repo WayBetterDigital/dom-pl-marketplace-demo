@@ -18,10 +18,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const orderService = req.scope.resolve<any>(Modules.ORDER)
 
-  // query.graph → status, created_at, email, total (BigNumber handled by Medusa serializer)
+  // query.graph → scalar fields + payment_collections.status (admin reads from payment_collections, not order.payment_status)
   const { data: ordersMeta } = await query.graph({
     entity: "order",
-    fields: ["id", "status", "created_at", "total", "email"],
+    fields: ["id", "status", "payment_status", "created_at", "total", "email", "payment_collections.status"],
     filters: { customer_id: id },
   })
 
@@ -29,14 +29,22 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.json({ orders: [] })
   }
 
-  // listOrders → items with correct unit_price and quantity values
+  // listOrders → items with correct unit_price/quantity values + payment_status (query.graph doesn't expose it)
   const ordersWithItems: any[] = await orderService.listOrders(
     { customer_id: id },
-    { relations: ["items"], take: 100 }
+    {
+      select: ["id", "status", "payment_status", "customer_id", "created_at", "total", "email"],
+      relations: ["items"],
+      take: 100,
+    }
   )
 
   const itemsByOrderId = new Map<string, any[]>(
     ordersWithItems.map((o) => [o.id, o.items ?? []])
+  )
+
+  const paymentStatusById = new Map<string, string | undefined>(
+    ordersWithItems.map((o) => [o.id, o.payment_status])
   )
 
   // Collect product IDs for house plan enrichment
@@ -82,6 +90,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return {
       id: meta.id,
       status: meta.status,
+      // Prefer listOrders field, then payment_collections (what admin reads), then fallback
+      payment_status:
+        paymentStatusById.get(meta.id) ||
+        (meta as any).payment_collections?.[0]?.status ||
+        "not_paid",
       created_at: meta.created_at,
       total: toNum(meta.total) || itemsTotal,
       email: meta.email,

@@ -38,19 +38,26 @@ const displayEmail = computed(() =>
 
 const statusLabel = (status: string) => {
   const map: Record<string, string> = {
+    captured: 'Opłacone',
+    paid: 'Opłacone',
     completed: 'Opłacone',
-    pending: 'Oczekuje',
-    cancelled: 'Anulowane',
+    authorized: 'Autoryzowane',
+    awaiting: 'Oczekuje',
+    not_paid: 'Nieopłacone',
+    refunded: 'Zwrócone',
+    partially_refunded: 'Częściowo zwrócone',
     canceled: 'Anulowane',
+    cancelled: 'Anulowane',
     requires_action: 'Wymaga akcji'
   }
   return map[status] ?? status
 }
 
 const statusColor = (status: string) => {
-  if (status === 'completed') return 'success'
-  if (status === 'pending') return 'warning'
-  if (status === 'cancelled' || status === 'canceled') return 'error'
+  if (status === 'captured' || status === 'paid' || status === 'completed') return 'success'
+  if (status === 'authorized') return 'info'
+  if (status === 'awaiting' || status === 'not_paid' || status === 'requires_action') return 'warning'
+  if (status === 'canceled' || status === 'cancelled') return 'error'
   return 'neutral'
 }
 
@@ -111,11 +118,11 @@ async function handleDownloadZip(planId: string, planTitle: string) {
           </p>
         </div>
         <UBadge
-          :color="statusColor(order.status)"
+          :color="statusColor(order.payment_status)"
           variant="subtle"
           size="lg"
         >
-          {{ statusLabel(order.status) }}
+          {{ statusLabel(order.payment_status) }}
         </UBadge>
       </div>
 
@@ -231,9 +238,11 @@ async function handleDownloadZip(planId: string, planTitle: string) {
             </dd>
           </div>
           <div>
-            <dt class="text-muted">Status</dt>
+            <dt class="text-muted">
+              Status płatności
+            </dt>
             <dd class="font-medium text-default mt-0.5">
-              {{ statusLabel(order.status) }}
+              {{ statusLabel(order.payment_status) }}
             </dd>
           </div>
           <div>

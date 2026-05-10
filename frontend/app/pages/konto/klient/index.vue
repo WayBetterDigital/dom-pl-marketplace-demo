@@ -78,11 +78,17 @@ const stats = computed(() => [
 
 const statusLabel = (status: string) => {
   const map: Record<string, string> = {
+    captured: 'Opłacone',
+    paid: 'Opłacone',
     completed: 'Opłacone',
-    pending: 'Oczekuje',
-    cancelled: 'Anulowane',
+    authorized: 'Autoryzowane',
+    awaiting: 'Oczekuje',
+    not_paid: 'Nieopłacone',
+    refunded: 'Zwrócone',
+    partially_refunded: 'Częściowo zwrócone',
     canceled: 'Anulowane',
-    requires_action: 'Wymaga akcji'
+    cancelled: 'Anulowane',
+    requires_action: 'Wymaga akcji',
   }
   return map[status] ?? status
 }
@@ -106,7 +112,7 @@ const recentOrders = computed<OrderRow[]>(() =>
         ? (o.items[0]?.title ?? '—')
         : `${o.items.length} produkty`,
       date: new Date(o.created_at).toLocaleDateString('pl-PL'),
-      status: statusLabel(o.status),
+      status: statusLabel(o.payment_status),
       amount: formatPLN(total > 0 ? total : itemTotal),
       plans
     }
