@@ -19,7 +19,7 @@ const { data: orders, pending } = await useAsyncData(
 )
 
 const order = computed<AppOrder | undefined>(() =>
-  (orders.value ?? []).find((o) => o.id === orderId)
+  (orders.value ?? []).find(o => o.id === orderId)
 )
 
 const formatPLN = (value: number) =>
@@ -111,7 +111,7 @@ async function handleDownloadZip(planId: string, planTitle: string) {
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 class="text-2xl font-bold text-default">
-            Zamówienie #{{ order.id.slice(-6).toUpperCase() }}
+            Zamówienie DOM-{{ order.display_id }}
           </h1>
           <p class="text-sm text-muted mt-1">
             {{ new Date(order.created_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }) }}
@@ -226,13 +226,17 @@ async function handleDownloadZip(planId: string, planTitle: string) {
         </template>
         <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
           <div>
-            <dt class="text-muted">Nr zamówienia</dt>
+            <dt class="text-muted">
+              Nr zamówienia
+            </dt>
             <dd class="font-medium text-default mt-0.5">
-              #{{ order.id.slice(-6).toUpperCase() }}
+              DOM-{{ order.display_id }}
             </dd>
           </div>
           <div>
-            <dt class="text-muted">Data złożenia</dt>
+            <dt class="text-muted">
+              Data złożenia
+            </dt>
             <dd class="font-medium text-default mt-0.5">
               {{ new Date(order.created_at).toLocaleDateString('pl-PL') }}
             </dd>
@@ -246,7 +250,9 @@ async function handleDownloadZip(planId: string, planTitle: string) {
             </dd>
           </div>
           <div>
-            <dt class="text-muted">Email</dt>
+            <dt class="text-muted">
+              Email
+            </dt>
             <dd class="font-medium text-default mt-0.5">
               {{ displayEmail }}
             </dd>

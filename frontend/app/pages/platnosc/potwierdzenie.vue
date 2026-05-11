@@ -71,9 +71,9 @@ onMounted(async () => {
         <h1 class="text-3xl font-bold text-default mb-2">Dziękujemy za zamówienie!</h1>
         <p class="text-muted text-lg">Płatność została zrealizowana pomyślnie.</p>
       </div>
-      <div v-if="orderId" class="bg-elevated rounded-xl border border-default px-6 py-4 text-sm">
+      <div v-if="order?.display_id" class="bg-elevated rounded-xl border border-default px-6 py-4 text-sm">
         <span class="text-muted">Numer zamówienia:</span>
-        <span class="font-mono font-semibold text-default ml-2">{{ orderId }}</span>
+        <span class="font-mono font-semibold text-default ml-2">DOM-{{ order.display_id }}</span>
       </div>
       <div v-if="order?.items?.length" class="w-full bg-elevated rounded-xl border border-default divide-y divide-default text-left">
         <div v-for="item in order.items" :key="item.id" class="px-6 py-4 flex items-center justify-between gap-4">
@@ -114,9 +114,9 @@ onMounted(async () => {
           sprawdź ponownie za chwilę.
         </p>
       </div>
-      <div v-if="orderId" class="bg-elevated rounded-xl border border-default px-6 py-4 text-sm">
+      <div v-if="order?.display_id" class="bg-elevated rounded-xl border border-default px-6 py-4 text-sm">
         <span class="text-muted">Numer zamówienia:</span>
-        <span class="font-mono font-semibold text-default ml-2">{{ orderId }}</span>
+        <span class="font-mono font-semibold text-default ml-2">DOM-{{ order.display_id + 999 }}</span>
       </div>
       <div class="flex gap-3">
         <UButton to="/produkty" variant="outline" icon="i-lucide-search">Przeglądaj projekty</UButton>

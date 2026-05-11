@@ -106,7 +106,7 @@ const recentOrders = computed<OrderRow[]>(() =>
       }
     }
     return {
-      id: '#' + o.id.slice(-6).toUpperCase(),
+      id: `DOM-${o.display_id}`,
       orderId: o.id,
       products: o.items.length === 1
         ? (o.items[0]?.title ?? '—')

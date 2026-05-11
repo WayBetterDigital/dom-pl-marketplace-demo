@@ -1,27 +1,20 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
+import { toNum } from "../../../../../lib/to-num"
 
-function toNum(val: any): number {
-  if (val === null || val === undefined) return 0
-  if (typeof val === "number") return val
-  if (typeof val === "string") return parseFloat(val) || 0
-  if (typeof val === "object") {
-    if ("numeric_value" in val) return Number(val.numeric_value) || 0
-    if ("numeric" in val) return Number(val.numeric) || 0
-    if ("value" in val) return parseFloat(String(val.value)) || 0
-  }
-  return 0
-}
-
-export async function GET(req: MedusaRequest, res: MedusaResponse) {
+export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   const { id } = req.params
+
+  if (req.auth_context?.actor_id !== id) {
+    return res.status(403).json({ message: "Brak dostępu" })
+  }
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const orderService = req.scope.resolve<any>(Modules.ORDER)
 
   // query.graph → order meta + payment_collection IDs (no deep payment traversal — cross-module joins not wired)
   const { data: ordersMeta } = await query.graph({
     entity: "order",
-    fields: ["id", "status", "created_at", "total", "email", "payment_collections.id", "payment_collections.status"],
+    fields: ["id", "display_id", "status", "created_at", "total", "email", "payment_collections.id", "payment_collections.status"],
     filters: { customer_id: id },
   })
 
@@ -124,6 +117,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const itemsTotal = items.reduce((sum: number, i: any) => sum + i.unit_price * i.quantity, 0)
     return {
       id: meta.id,
+      display_id: meta.display_id,
       status: meta.status,
       payment_status: derivePaymentStatus(meta),
       created_at: meta.created_at,
