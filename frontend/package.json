@@ -16,6 +16,7 @@
     "@nuxt/image": "2.0.0",
     "@nuxt/ui": "^4.5.1",
     "@nuxtjs/medusa": "1.2.0",
+    "@stripe/stripe-js": "^9.4.0",
     "nuxt": "^4.4.2",
     "tailwindcss": "^4.2.1"
   },

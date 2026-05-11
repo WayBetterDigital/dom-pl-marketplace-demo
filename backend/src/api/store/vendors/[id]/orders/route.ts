@@ -1,17 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
-
-function toNum(val: any): number {
-  if (val === null || val === undefined) return 0
-  if (typeof val === "number") return val
-  if (typeof val === "string") return parseFloat(val) || 0
-  if (typeof val === "object") {
-    if ("numeric_value" in val) return Number(val.numeric_value) || 0
-    if ("numeric" in val) return Number(val.numeric) || 0
-    if ("value" in val) return parseFloat(String(val.value)) || 0
-  }
-  return 0
-}
+import { toNum } from "../../../../../lib/to-num"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params

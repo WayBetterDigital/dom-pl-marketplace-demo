@@ -10,7 +10,9 @@ export type AppOrderItem = {
 
 export type AppOrder = {
   id: string
+  display_id: number
   status: string
+  payment_status: string
   created_at: string
   total: number
   email: string

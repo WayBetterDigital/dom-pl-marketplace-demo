@@ -48,10 +48,15 @@ export function useCartService() {
           })
           cartData = response.cart
         }
-        cart.value = cartData
-        // Keep both storages in sync
-        saveCartId(storedId)
-        return cart.value
+
+        // Discard completed carts — they can't be modified, a new one must be created
+        if (cartData?.completed_at) {
+          saveCartId(null)
+        } else {
+          cart.value = cartData
+          saveCartId(storedId)
+          return cart.value
+        }
       } catch (e) {
         console.error('Failed to retrieve cart:', e)
         saveCartId(null)
@@ -99,45 +104,91 @@ export function useCartService() {
     return updatedCart
   }
 
-  type CheckoutCustomer = { email: string, first_name: string, last_name: string }
+  type CheckoutCustomer = { email: string; first_name: string; last_name: string }
 
-  async function completeDummyCheckout(customer?: CheckoutCustomer) {
+  async function initiateStripeP24Payment(
+    customer: CheckoutCustomer
+  ): Promise<{ clientSecret: string }> {
     const currentCart = await getCart()
-    if (!currentCart || !currentCart.items?.length) return
+    if (!currentCart?.items?.length) throw new Error('Koszyk jest pusty')
 
-    // 1. Set email and dummy address
-    await sdk.store.cart.update(currentCart.id, {
-      email: customer?.email ?? 'demo@example.com',
-      shipping_address: {
-        first_name: customer?.first_name ?? 'Demo',
-        last_name: customer?.last_name ?? 'User',
-        address_1: 'Test Street 1',
-        city: 'Test City',
-        country_code: 'pl',
-        postal_code: '00-000'
-      }
+    // Fetch fresh cart state to check what's already been set up from a previous attempt
+    const { cart: freshCart } = await sdk.store.cart.retrieve(currentCart.id, {
+      fields: '*shipping_methods,*payment_collection,*payment_collection.payment_sessions',
     })
 
-    // 2. Fetch shipping options and add the first one
-    const { shipping_options } = await sdk.store.fulfillment.listCartOptions({ cart_id: currentCart.id })
-    if (shipping_options?.length) {
-      await sdk.store.cart.addShippingMethod(currentCart.id, {
-        option_id: shipping_options[0].id
-      })
+    // 1. Set customer email and placeholder shipping address (digital delivery)
+    await sdk.store.cart.update(currentCart.id, {
+      email: customer.email,
+      shipping_address: {
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        address_1: 'Dostawa cyfrowa',
+        city: 'Warszawa',
+        country_code: 'pl',
+        postal_code: '00-000',
+      },
+    })
+
+    // 2. Add shipping option only if not already present (prevents conflict on retry)
+    if (!(freshCart as any)?.shipping_methods?.length) {
+      const { shipping_options } = await sdk.store.fulfillment.listCartOptions({ cart_id: currentCart.id })
+      if (shipping_options?.length) {
+        await sdk.store.cart.addShippingMethod(currentCart.id, { option_id: shipping_options[0].id })
+      }
     }
 
-    // 3. Initiate payment session
-    await sdk.store.payment.initiatePaymentSession(currentCart, {
-      provider_id: 'pp_system_default' // The default manual provider in Medusa v2
-    })
+    // 3. Reuse existing P24 session if present, otherwise create a new one
+    //    (prevents conflict when the user retries after a failed/abandoned attempt)
+    const existingSession = (freshCart as any)?.payment_collection?.payment_sessions?.find(
+      (s: any) => s.provider_id === 'pp_stripe-przelewy24_default'
+    )
 
-    // 4. Complete cart
-    const { type, order } = await sdk.store.cart.complete(currentCart.id)
+    let clientSecret: string | undefined
+    if (existingSession?.data) {
+      clientSecret = (existingSession.data as any)?.client_secret
+    } else {
+      const { payment_collection } = await sdk.store.payment.initiatePaymentSession(currentCart, {
+        provider_id: 'pp_stripe-przelewy24_default',
+      })
+      const session = payment_collection?.payment_sessions?.find(
+        (s: any) => s.provider_id === 'pp_stripe-przelewy24_default'
+      )
+      clientSecret = (session?.data as any)?.client_secret
+    }
 
+    if (!clientSecret) throw new Error('Nie udało się zainicjować płatności Stripe')
+
+    // Store cartId so the confirmation page can complete the cart after the Stripe redirect.
+    // completeCart must be called after the user returns — only then has Stripe authorized the payment.
+    sessionStorage.setItem('stripe_cart_id', currentCart.id)
+
+    return { clientSecret }
+  }
+
+  async function completeStripeCheckout(): Promise<{ orderId: string | null }> {
+    const cartId = sessionStorage.getItem('stripe_cart_id')
+    sessionStorage.removeItem('stripe_cart_id')
     saveCartId(null)
     cart.value = null
 
-    return order
+    if (!cartId) return { orderId: null }
+
+    try {
+      const result = await sdk.store.cart.complete(cartId)
+
+      if (result.type === 'order' && result.order?.id) {
+        return { orderId: result.order.id }
+      }
+
+      // type === 'cart' means the webhook already completed the cart and created the order.
+      // Try to get the order_id from the completed cart data.
+      const orderId = (result as any)?.cart?.order_id ?? (result as any)?.order_id ?? null
+      return { orderId }
+    } catch {
+      // Cart likely already completed by the Stripe webhook — order exists but we don't have its ID.
+      return { orderId: null }
+    }
   }
 
   return {
@@ -145,6 +196,7 @@ export function useCartService() {
     getCart,
     addToCart,
     removeFromCart,
-    completeDummyCheckout
+    initiateStripeP24Payment,
+    completeStripeCheckout,
   }
 }
