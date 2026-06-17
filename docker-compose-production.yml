@@ -64,7 +64,6 @@
 #       MINIO_ROOT_PASSWORD: minioadmin
 #     ports:
 #       - "9090:9000"
-#       - "9091:9001"
 #     volumes:
 #       - minio_data:/data
 #     networks:
