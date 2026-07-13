@@ -13,6 +13,12 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  icon: {
+    customCollections: [
+      { prefix: 'local', dir: './app/assets/icons' }
+    ]
+  },
+
   runtimeConfig: {
     medusaBaseUrl: 'http://localhost:9000',
     // public file URLs use localhost:9090, but containers must use minio:9000
