@@ -2,6 +2,8 @@
   <div>
     <HeroBanner />
 
+    <CategoryCarousel />
+
     <UContainer class="py-12 space-y-12">
       <!-- Według kondygnacji -->
       <FilterTileGroup

@@ -91,7 +91,7 @@ const guarantees = [
             <UButton
               color="neutral"
               variant="ghost"
-              class="rounded-[10px] px-4 py-2.5 text-sm text-white border border-white/70 bg-transparent hover:bg-white/10 whitespace-nowrap"
+              class="rounded-[10px] px-4 py-2.5 text-sm text-white border border-white/70 bg-transparent hover:bg-white/10 whitespace-nowrap cursor-pointer"
             >
               <UIcon name="i-local-filter" class="size-5" />
               Wszystkie filtry
