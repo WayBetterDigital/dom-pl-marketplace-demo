@@ -30,8 +30,9 @@ const guarantees = [
 
 <template>
   <section class="px-4 md:px-[137px] pt-5 mb-20">
+    <!-- Desktop / tablet -->
     <div
-      class="relative overflow-hidden rounded-[40px] bg-brand-blue-700 text-white min-h-75"
+      class="hidden md:block relative overflow-hidden rounded-[40px] bg-brand-blue-700 text-white min-h-75"
     >
       <NuxtImg
         src="/imgs/main-house-img.png"
@@ -109,6 +110,117 @@ const guarantees = [
             v-for="guarantee in guarantees"
             :key="guarantee.label"
             class="flex items-center gap-2 text-sm font-semibold leading-6"
+          >
+            <UIcon
+              :name="guarantee.icon"
+              class="size-6 shrink-0 text-brand-green-500"
+            />
+            {{ guarantee.label }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Mobile -->
+    <div
+      class="md:hidden overflow-hidden rounded-3xl border border-white/15 bg-brand-blue-700 text-white"
+    >
+      <div class="relative">
+        <NuxtImg
+          src="/imgs/main-house-img.png"
+          alt=""
+          class="w-full h-52 object-cover"
+          aria-hidden="true"
+        />
+        <div
+          class="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-brand-blue-700 to-transparent"
+          aria-hidden="true"
+        />
+        <NuxtImg
+          src="/svgs/house-heart.svg"
+          alt=""
+          class="absolute right-4 bottom-4 w-[72px]"
+          aria-hidden="true"
+        />
+      </div>
+
+      <div class="px-5 pt-6 pb-6">
+        <h1 class="text-2xl mb-6 leading-8">
+          <span class="block font-bold mb-1">Gotowe projekty domów</span>
+          <span class="block font-light">na wyciągnięcie ręki!</span>
+        </h1>
+
+        <div class="flex flex-col gap-2 rounded-[10px] bg-white/10 p-[5px] mb-6.5">
+          <div
+            class="flex items-stretch rounded-[10px] bg-white text-brand-blue-700"
+          >
+            <template
+              v-for="(filter, index) in quickFilters"
+              :key="filter.key"
+            >
+              <div
+                v-if="index > 0"
+                class="w-px h-[15px] self-center rounded-full bg-black"
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                class="flex-1 flex flex-col items-center justify-center py-3 cursor-pointer"
+              >
+                <span class="relative">
+                  <UIcon
+                    :name="filter.icon"
+                    class="size-5"
+                  />
+                  <UBadge
+                    v-if="filter.selected"
+                    :label="String(filter.selected)"
+                    :ui="{
+                      base: 'absolute -top-2 -right-3 size-4 shrink-0 p-0 flex items-center justify-center rounded-full bg-brand-crimson-700 text-white text-[10px] font-semibold leading-none'
+                    }"
+                  />
+                </span>
+                <span class="text-[10px] font-medium">{{ filter.label }}</span>
+              </button>
+            </template>
+            <button
+              type="button"
+              class="flex items-center justify-center pr-3 pl-1 cursor-pointer"
+            >
+              <UIcon
+                name="i-lucide-chevron-down"
+                class="size-5 text-black"
+              />
+            </button>
+          </div>
+
+          <UButton
+            to="/produkty"
+            block
+            class="rounded-[10px] py-3 text-sm bg-brand-green-500 text-white font-semibold hover:bg-brand-green-500/90"
+          >
+            Pokaż {{ plansCount }} projekty domów
+          </UButton>
+
+          <UButton
+            color="neutral"
+            variant="ghost"
+            block
+            class="rounded-[10px] py-3 text-sm text-white border border-white bg-transparent hover:bg-white/10"
+          >
+            <UIcon
+              name="i-local-filter"
+              class="size-5"
+            />
+            Wszystkie filtry
+          </UButton>
+        </div>
+
+        <ul class="flex flex-col gap-6">
+          <li
+            v-for="guarantee in guarantees"
+            :key="guarantee.label"
+            class="flex items-center gap-2 text-[12px] font-semibold leading-[21px]"
           >
             <UIcon
               :name="guarantee.icon"
