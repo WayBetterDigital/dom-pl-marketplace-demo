@@ -74,7 +74,7 @@ function scroll(direction: -1 | 1) {
 
     <div
       ref="track"
-      class="flex gap-5 overflow-x-auto no-scrollbar scroll-smooth snap-x [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
+      class="carousel-track thin-scrollbar flex gap-5 overflow-x-auto scroll-smooth snap-x pb-2 md:pb-0 md:[mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
     >
       <NuxtLink
         v-for="category in categories"
@@ -111,3 +111,15 @@ function scroll(direction: -1 | 1) {
     </button>
   </section>
 </template>
+
+<style scoped>
+/* thin-scrollbar tylko na mobile — na desktopie chowamy (są strzałki) */
+@media (min-width: 768px) {
+  .carousel-track {
+    scrollbar-width: none;
+  }
+  .carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+}
+</style>
