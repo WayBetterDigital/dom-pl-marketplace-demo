@@ -12,6 +12,63 @@ const quickFilters = [
   { key: 'rooms', label: 'Pokoje', icon: 'i-local-door-icon', selected: 0 }
 ]
 
+const filterGroups = [
+  {
+    key: 'area',
+    label: 'Powierzchnia',
+    options: [
+      '40 - 70m²',
+      '70 - 100m²',
+      '100 - 120 m²',
+      '120 - 140 m²',
+      '140 - 160 m²',
+      '160 - 200 m²',
+      '200 m² i więcej'
+    ]
+  },
+  {
+    key: 'floors',
+    label: 'Kondygnacje',
+    options: ['Parterowy', 'Piętrowy', 'Trzykondygnacyjny']
+  },
+  {
+    key: 'rooms',
+    label: 'Pokoje',
+    options: [
+      '1 pokojowe',
+      '2 pokojowe',
+      '3 pokojowe',
+      '5 pokojowe',
+      '6 pokojowe i więcej'
+    ]
+  }
+]
+
+const selectedFilters = reactive<Record<string, string[]>>({
+  area: ['40 - 70m²'],
+  floors: [],
+  rooms: []
+})
+
+function toggleFilter(
+  groupKey: string,
+  option: string,
+  value: boolean | 'indeterminate'
+) {
+  const arr = selectedFilters[groupKey]
+  if (!arr) return
+  const idx = arr.indexOf(option)
+  if (value === true && idx === -1) {
+    arr.push(option)
+  } else if (value !== true && idx !== -1) {
+    arr.splice(idx, 1)
+  }
+}
+
+function countFor(groupKey: string) {
+  return selectedFilters[groupKey]?.length ?? 0
+}
+
 const guarantees = [
   {
     icon: 'i-local-warranty-shield',
@@ -61,31 +118,70 @@ const guarantees = [
         <div
           class="flex flex-wrap xl:flex-nowrap xl:w-fit items-center gap-3 mb-8 rounded-[10px] bg-white/10 p-[5px]"
         >
-          <div
-            class="flex items-center rounded-[10px] bg-white text-brand-blue-700 px-2 py-1.5"
+          <UPopover
+            :content="{ align: 'start', side: 'bottom', sideOffset: 12 }"
+            :ui="{ content: 'rounded-2xl shadow-xl bg-white ring-1 ring-black/5' }"
           >
-            <button
-              v-for="(filter, index) in quickFilters"
-              :key="filter.key"
-              type="button"
-              class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium whitespace-nowrap cursor-pointer"
-              :class="index > 0 ? 'border-l border-brand-blue-700/15' : ''"
+            <div
+              class="flex items-center rounded-[10px] bg-white text-brand-blue-700 px-2 py-1.5 cursor-pointer"
             >
-              <UIcon :name="filter.icon" class="size-5 shrink-0" />
-              {{ filter.label }}
-              <UBadge
-                v-if="filter.selected"
-                :label="String(filter.selected)"
-                :ui="{
-                  base: 'size-5 shrink-0 p-0 flex items-center justify-center rounded-full bg-brand-crimson-700 text-white text-[11px] font-semibold leading-none'
-                }"
-              />
-            </button>
-            <UIcon
-              name="i-lucide-chevron-down"
-              class="size-5 mx-2 shrink-0 text-brand-blue-700/60"
-            />
-          </div>
+              <span
+                v-for="(filter, index) in quickFilters"
+                :key="filter.key"
+                class="flex items-center px-3 py-1.5 gap-1.5 text-[12px] font-semibold whitespace-nowrap leading-6 rounded-[10px] hover:bg-gray-100"
+                :class="index > 0 ? 'border-l border-brand-blue-700/15' : ''"
+              >
+                <UIcon
+                  :name="filter.icon"
+                  class="size-5 shrink-0"
+                />
+                {{ filter.label }}
+                <UBadge
+                  v-if="countFor(filter.key)"
+                  :label="String(countFor(filter.key))"
+                  :ui="{
+                    base: 'w-[13px] h-[13px] shrink-0 p-0 flex items-center justify-center rounded-full bg-brand-crimson-700 text-white text-[8px]'
+                  }"
+                />
+                <UIcon
+                  v-if="index === quickFilters.length - 1"
+                  name="i-lucide-chevron-down"
+                  class="size-5 ml-1 shrink-0 text-brand-blue-700/60"
+                />
+              </span>
+            </div>
+
+            <template #content>
+              <div class="w-[720px] max-w-[85vw] p-6">
+                <div class="grid grid-cols-3 gap-x-8">
+                  <div
+                    v-for="group in filterGroups"
+                    :key="group.key"
+                  >
+                    <p class="text-[14px] leading-6 font-semibold text-brand-blue-700 mb-[13px]">
+                      {{ group.label }}
+                    </p>
+                    <div class="flex flex-col gap-1">
+                      <UCheckbox
+                        v-for="option in group.options"
+                        :key="option"
+                        :label="option"
+                        :model-value="selectedFilters[group.key]?.includes(option)"
+                        :ui="{
+                          label: 'text-[12px] leading-6 text-brand-blue-700 font-semibold',
+                          base: 'ring-brand-blue-700/25',
+                          indicator: 'text-white'
+                        }"
+                        @update:model-value="
+                          (v) => toggleFilter(group.key, option, v)
+                        "
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </UPopover>
 
           <div class="flex items-center gap-2">
             <UButton
