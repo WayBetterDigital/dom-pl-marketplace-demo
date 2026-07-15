@@ -69,6 +69,12 @@ function countFor(groupKey: string) {
   return selectedFilters[groupKey]?.length ?? 0
 }
 
+const isFilterModalOpen = ref(false)
+
+function openFilterModal() {
+  isFilterModalOpen.value = true
+}
+
 const guarantees = [
   {
     icon: 'i-local-warranty-shield',
@@ -248,7 +254,8 @@ const guarantees = [
 
         <div class="flex flex-col gap-2 rounded-[10px] bg-white/10 p-[5px] mb-6.5">
           <div
-            class="flex items-stretch rounded-[10px] bg-white text-brand-blue-700"
+            class="flex items-stretch rounded-[10px] bg-white text-brand-blue-700 cursor-pointer"
+            @click="isFilterModalOpen = true"
           >
             <template
               v-for="(filter, index) in quickFilters"
@@ -269,8 +276,8 @@ const guarantees = [
                     class="size-5"
                   />
                   <UBadge
-                    v-if="filter.selected"
-                    :label="String(filter.selected)"
+                    v-if="countFor(filter.key)"
+                    :label="String(countFor(filter.key))"
                     :ui="{
                       base: 'absolute -top-2 -right-3 size-4 shrink-0 p-0 flex items-center justify-center rounded-full bg-brand-crimson-700 text-white text-[10px] font-semibold leading-none'
                     }"
@@ -303,6 +310,7 @@ const guarantees = [
             variant="ghost"
             block
             class="rounded-[10px] py-3 text-sm text-white border border-white bg-transparent hover:bg-white/10"
+            @click="openFilterModal"
           >
             <UIcon
               name="i-local-filter"
@@ -326,6 +334,61 @@ const guarantees = [
           </li>
         </ul>
       </div>
+
+      <UModal
+        v-model:open="isFilterModalOpen"
+        title="Znajdź gotowy projekt domu"
+        :close="{ color: 'neutral', variant: 'ghost' }"
+        :ui="{
+          content:
+            'bg-white text-brand-blue-700 divide-y-0 w-[calc(100vw-2rem)] max-w-md max-h-[calc(100dvh-3rem)]',
+          header: 'border-b border-brand-blue-700/10 min-h-14 px-5',
+          title: 'text-brand-blue-700 text-lg font-semibold',
+          close: 'text-brand-blue-700',
+          body: 'p-0 overflow-y-auto',
+          footer: 'p-5'
+        }"
+      >
+        <template #body>
+          <div class="divide-y divide-brand-blue-700/10">
+            <div
+              v-for="group in filterGroups"
+              :key="group.key"
+              class="px-5 py-5"
+            >
+              <p class="text-base font-semibold text-brand-blue-700 mb-4">
+                {{ group.label }}
+              </p>
+              <div class="flex flex-col gap-3">
+                <UCheckbox
+                  v-for="option in group.options"
+                  :key="option"
+                  :label="option"
+                  :model-value="selectedFilters[group.key]?.includes(option)"
+                  :ui="{
+                    label: 'text-sm text-brand-blue-700 font-medium',
+                    base: 'ring-brand-blue-700/25',
+                    indicator: 'text-white'
+                  }"
+                  @update:model-value="
+                    (v) => toggleFilter(group.key, option, v)
+                  "
+                />
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template #footer>
+          <UButton
+            to="/produkty"
+            block
+            class="rounded-[10px] py-3 text-sm bg-brand-green-500 text-white font-semibold hover:bg-brand-green-500/90"
+          >
+            Pokaż {{ plansCount }} projekty domów
+          </UButton>
+        </template>
+      </UModal>
     </div>
   </section>
 </template>
