@@ -11,6 +11,9 @@
 	--color-brand-green-500: #00C07D;
   --color-brand-orange-700: #ff671d;
   --color-brand-crimson-700: #c00053;
+
+  --font-Inter: 'Inter', sans-serif;
+  --default-font-family: var(--font-Inter);
 }
 
 @layer utilities {

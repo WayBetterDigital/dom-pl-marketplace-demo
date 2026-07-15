@@ -18,6 +18,14 @@ export default defineNuxtConfig({
       { prefix: 'local', dir: './app/assets/icons' }
     ]
   },
+  fonts: {
+    families: [
+      {
+        name: 'Inter',
+        provider: 'google',
+      },
+    ],
+  },
 
   runtimeConfig: {
     medusaBaseUrl: 'http://localhost:9000',

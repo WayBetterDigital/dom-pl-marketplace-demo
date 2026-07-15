@@ -1,22 +1,6 @@
 <template>
   <div>
-    <!-- Hero -->
-    <div class="bg-elevated border-b border-muted">
-      <UContainer class="py-16 text-center">
-        <h1 class="text-4xl font-bold text-default mb-4">
-          Znajdź projekt domu dla siebie
-        </h1>
-        <p class="text-lg text-muted mb-8 max-w-xl mx-auto">
-          Przeglądaj projekty domów dopasowane do Twoich potrzeb i działki
-        </p>
-        <UButton
-          size="lg"
-          to="/produkty"
-        >
-          Wszystkie projekty
-        </UButton>
-      </UContainer>
-    </div>
+    <HeroBanner />
 
     <UContainer class="py-12 space-y-12">
       <!-- Według kondygnacji -->
