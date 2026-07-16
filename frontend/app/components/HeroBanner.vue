@@ -7,9 +7,9 @@ withDefaults(
 )
 
 const quickFilters = [
-  { key: 'area', label: 'Powierzchnia', icon: 'i-local-area-icon', selected: 1 },
-  { key: 'floors', label: 'Kondygnacje', icon: 'i-local-floors-icon', selected: 0 },
-  { key: 'rooms', label: 'Pokoje', icon: 'i-local-door-icon', selected: 0 }
+  { key: 'area', label: 'Powierzchnia', icon: 'i-local-area-icon' },
+  { key: 'floors', label: 'Kondygnacje', icon: 'i-local-floors-icon' },
+  { key: 'rooms', label: 'Pokoje', icon: 'i-local-door-icon' }
 ]
 
 const filterGroups = [
@@ -45,7 +45,7 @@ const filterGroups = [
 ]
 
 const selectedFilters = reactive<Record<string, string[]>>({
-  area: ['40 - 70m²'],
+  area: [],
   floors: [],
   rooms: []
 })
@@ -131,30 +131,37 @@ const guarantees = [
             <div
               class="flex items-center rounded-[10px] bg-white text-brand-blue-700 px-2 py-1.5 cursor-pointer"
             >
-              <span
+              <template
                 v-for="(filter, index) in quickFilters"
                 :key="filter.key"
-                class="flex items-center px-3 py-1.5 gap-1.5 text-[12px] font-semibold whitespace-nowrap leading-6 rounded-[10px] hover:bg-gray-100"
-                :class="index > 0 ? 'border-l border-brand-blue-700/15' : ''"
               >
-                <UIcon
-                  :name="filter.icon"
-                  class="size-5 shrink-0"
+                <div
+                  v-if="index > 0"
+                  class="w-px h-[15px] self-center rounded-full bg-black"
+                  aria-hidden="true"
                 />
-                {{ filter.label }}
-                <UBadge
-                  v-if="countFor(filter.key)"
-                  :label="String(countFor(filter.key))"
-                  :ui="{
-                    base: 'w-[13px] h-[13px] shrink-0 p-0 flex items-center justify-center rounded-full bg-brand-crimson-700 text-white text-[8px]'
-                  }"
-                />
-                <UIcon
-                  v-if="index === quickFilters.length - 1"
-                  name="i-lucide-chevron-down"
-                  class="size-5 ml-1 shrink-0 text-brand-blue-700/60"
-                />
-              </span>
+                <span
+                  class="flex items-center px-3 py-1.5 gap-1.5 text-[12px] font-semibold whitespace-nowrap leading-6 hover:bg-gray-100"
+                >
+                  <UIcon
+                    :name="filter.icon"
+                    class="size-5 shrink-0"
+                  />
+                  {{ filter.label }}
+                  <UBadge
+                    v-if="countFor(filter.key)"
+                    :label="String(countFor(filter.key))"
+                    :ui="{
+                      base: 'w-[13px] h-[13px] shrink-0 p-0 flex items-center justify-center rounded-full bg-brand-crimson-700 text-white text-[8px]'
+                    }"
+                  />
+                  <UIcon
+                    v-if="index === quickFilters.length - 1"
+                    name="i-lucide-chevron-down"
+                    class="size-5 ml-1 shrink-0 text-black"
+                  />
+                </span>
+              </template>
             </div>
 
             <template #content>
