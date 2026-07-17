@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import type { AppHousePlan } from '~/types/house-plan'
 
-withDefaults(
-  defineProps<{
-    plans: AppHousePlan[]
-    title?: string
-  }>(),
-  { title: 'Polecane projekty domów' }
-)
+defineProps<{
+  plans: AppHousePlan[]
+}>()
 
 const benefits = [
   'Kompletna dokumentacja techniczna',
@@ -110,8 +106,8 @@ const promoIndexes = [0, 1, 4, 5]
 
       <!-- Projects -->
       <div class="flex-1 min-w-0">
-        <h2 class="text-xl font-bold text-brand-blue-700 mb-5">
-          {{ title }}
+        <h2 class="text-[24px] leading-10 font-bold text-brand-blue-700 mb-6">
+          Polecane projekty domów
         </h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -126,7 +122,7 @@ const promoIndexes = [0, 1, 4, 5]
         <UButton
           to="/produkty"
           block
-          class="mt-5 rounded-xl border border-brand-green-500 bg-transparent py-3 text-[13px] font-semibold text-brand-green-500 hover:bg-brand-green-500/5"
+          class="mt-10 rounded-[10px] border border-brand-green-500 bg-transparent py-3 text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
         >
           Zobacz więcej polecanych projektów domów
         </UButton>

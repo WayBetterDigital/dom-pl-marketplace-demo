@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AppHousePlan } from '~/types/house-plan'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     plan: AppHousePlan
     hotPromo?: boolean
@@ -11,14 +11,23 @@ withDefaults(
 
 const isFavorite = ref(false)
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('pl-PL', {
+const cover = computed(
+  () =>
+    props.plan.thumbnail
+    || props.plan.images?.[0]?.url
+    || '/imgs/home_plan1.jpg'
+)
+
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
     maximumFractionDigits: 0,
     useGrouping: 'always'
   }).format(price)
-}
+
+const formatArea = (area: number) =>
+  new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 }).format(area)
 
 const plural = (n: number, one: string, few: string, many: string) => {
   if (n === 1) return one
@@ -31,25 +40,27 @@ const plural = (n: number, one: string, few: string, many: string) => {
 
 <template>
   <div
-    class="flex flex-col overflow-hidden rounded-xl border border-brand-blue-700/10 bg-white"
+    class="flex flex-col rounded-[10px] border border-brand-blue-700/10 bg-white p-2.5 pb-4"
   >
     <div class="relative">
-      <div class="aspect-video overflow-hidden bg-neutral-100">
-        <PlanImageGallery
-          :images="plan?.images"
-          :thumbnail="plan?.thumbnail"
-          mode="compact"
+      <div class="aspect-[4/3] overflow-hidden rounded-[10px] bg-neutral-100">
+        <NuxtImg
+          :src="cover"
+          :alt="plan.title"
+          class="size-full object-cover"
+          loading="lazy"
+          @error="($event.target as HTMLImageElement).src = '/imgs/home_plan1.jpg'"
         />
       </div>
 
       <span
         v-if="hotPromo"
-        class="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-brand-green-500 px-2 py-1 text-[10px] font-semibold text-white"
+        class="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-brand-green-500 px-3 py-1.5 text-xs font-semibold text-white"
       >
         <NuxtImg
           src="/svgs/hot-promo.svg"
           alt=""
-          class="w-3 h-3"
+          class="w-3.5 h-3.5"
           aria-hidden="true"
         />
         Hot promo
@@ -58,12 +69,12 @@ const plural = (n: number, one: string, few: string, many: string) => {
       <button
         type="button"
         :aria-label="isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'"
-        class="absolute top-3 right-3 z-10 flex size-7 cursor-pointer items-center justify-center rounded-lg bg-white shadow-sm hover:bg-brand-blue-700/5"
+        class="absolute top-1 right-1 flex cursor-pointer items-center justify-center p-[5px] rounded-[4px] border border-brand-blue-700/10 bg-white shadow-sm hover:bg-brand-blue-700/5"
         @click="isFavorite = !isFavorite"
       >
-        <UIcon
-          name="i-lucide-heart"
-          class="size-4"
+        <NuxtImg
+          src="/svgs/heart-outline-black.svg"
+          class="size-[14px]"
           :class="
             isFavorite
               ? 'text-brand-crimson-700 fill-brand-crimson-700'
@@ -73,51 +84,49 @@ const plural = (n: number, one: string, few: string, many: string) => {
       </button>
     </div>
 
-    <div class="flex flex-1 flex-col gap-3 p-4">
-      <div>
-        <h3
-          class="truncate text-[13px] font-semibold text-brand-blue-700"
-          :title="plan.title"
-        >
-          {{ plan.title }}
-        </h3>
-        <p class="mt-1 text-sm font-bold text-brand-green-500">
-          {{ formatPrice(plan.price) }}
-        </p>
-      </div>
+    <div class="flex flex-1 flex-col px-1 mt-[17px]">
+      <h3
+        class="truncate text-xl font-bold text-brand-blue-700"
+        :title="plan.title"
+      >
+        {{ plan.title }}
+      </h3>
+      <p class="text-xl font-bold text-brand-green-500">
+        {{ formatPrice(plan.price) }}
+      </p>
 
       <div
-        class="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px] font-medium text-brand-blue-700"
+        class="mt-3 mb-6 grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] leading-6 font-semibold text-brand-blue-700"
       >
         <span class="flex items-center gap-1.5">
           <UIcon
             name="i-local-area-icon"
-            class="size-4 shrink-0"
+            class="size-5 shrink-0"
           />
-          {{ plan.houseArea }} m²
+          {{ formatArea(plan.houseArea) }} m²
         </span>
-        <span class="flex items-center gap-1.5">
+        <span class="flex items-center gap-2">
           <UIcon
             name="i-local-door-icon"
-            class="size-4 shrink-0"
+            class="size-5 shrink-0"
           />
           {{ plan.rooms }} {{ plural(plan.rooms, 'pokój', 'pokoje', 'pokoi') }}
         </span>
-        <span class="flex items-center gap-1.5">
+        <span class="flex items-center gap-2">
           <UIcon
             name="i-lucide-bath"
-            class="size-4 shrink-0"
+            class="size-5 shrink-0"
           />
           {{ plan.bathroomsAndWc }}
           {{ plural(plan.bathroomsAndWc, 'łazienka', 'łazienki', 'łazienek') }}
         </span>
         <span
           v-if="plan.floors"
-          class="flex items-center gap-1.5"
+          class="flex items-center gap-2"
         >
           <UIcon
             name="i-local-floors-icon"
-            class="size-4 shrink-0"
+            class="size-5 shrink-0"
           />
           {{ plan.floors }}
           {{ plural(plan.floors, 'kondygnacja', 'kondygnacje', 'kondygnacji') }}
@@ -127,7 +136,7 @@ const plural = (n: number, one: string, few: string, many: string) => {
       <UButton
         block
         :to="`/produkty/${plan.id}`"
-        class="mt-auto rounded-lg border border-brand-blue-700/15 bg-white py-2 text-[12px] font-semibold text-brand-blue-700 hover:bg-brand-blue-700/5"
+        class="flex mt-auto rounded-xl border border-brand-blue-700/15 bg-white py-2.5 text-[15px] font-semibold text-brand-blue-700 hover:bg-brand-blue-700/5"
       >
         Zobacz szczegóły
       </UButton>
