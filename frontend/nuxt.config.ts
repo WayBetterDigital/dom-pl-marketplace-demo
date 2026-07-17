@@ -12,6 +12,11 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+  colorMode: {
+    preference: 'light',
+    fallback: 'light',
+    storageKey: 'dompl-color-mode'
+  },
 
   icon: {
     customCollections: [
