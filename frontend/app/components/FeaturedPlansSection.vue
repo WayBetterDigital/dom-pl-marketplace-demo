@@ -17,7 +17,7 @@ const promoIndexes = [0, 1, 4, 5]
 <template>
   <section class="px-4 md:px-[137px] py-10">
     <div class="flex flex-col lg:flex-row gap-6">
-      <aside class="w-full lg:w-[285px] shrink-0 flex flex-col gap-5">
+      <aside class="w-full lg:w-[285px] shrink-0 flex flex-col gap-6 order-2 lg:order-1">
         <!-- first add -->
         <div class="rounded-[10px] border-2 border-brand-green-500 bg-white py-10 px-6">
           <h3 class="text-[24px] leading-8 text-brand-blue-700 mb-4">
@@ -105,24 +105,27 @@ const promoIndexes = [0, 1, 4, 5]
       </aside>
 
       <!-- Projects -->
-      <div class="flex-1 min-w-0">
+      <div class="flex-1 min-w-0 order-1 lg:order-2">
         <h2 class="text-[24px] leading-10 font-bold text-brand-blue-700 mb-6">
           Polecane projekty domów
         </h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div
+          class="flex gap-5 overflow-x-auto thin-scrollbar pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:overflow-visible sm:grid sm:grid-cols-2 xl:grid-cols-3"
+        >
           <HousePlanCard
             v-for="(plan, index) in plans"
             :key="plan.id"
             :plan="plan"
             :hot-promo="promoIndexes.includes(index)"
+            class="shrink-0 w-[280px] sm:w-auto"
           />
         </div>
 
         <UButton
           to="/produkty"
           block
-          class="mt-10 rounded-[10px] border border-brand-green-500 bg-transparent py-3 text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
+          class="mt-10 mb-[60px] rounded-[10px] border border-brand-green-500 bg-transparent py-3 text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
         >
           Zobacz więcej polecanych projektów domów
         </UButton>

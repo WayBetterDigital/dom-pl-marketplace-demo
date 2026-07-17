@@ -33,7 +33,7 @@
     width: 4px;
   }
   .thin-scrollbar::-webkit-scrollbar-track {
-    background-color: #aeb5cf;
+    background-color: #AEB5CF;
     border-radius: 9999px;
     margin-inline: var(--scrollbar-inset);
   }
@@ -43,7 +43,7 @@
     height: 0;
   }
   .thin-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #fff;
+    background-color: #202945;
     border-radius: 9999px;
   }
 
