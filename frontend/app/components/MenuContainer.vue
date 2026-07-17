@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
+import { mainNavLinks, secondaryNavLinks } from '~/constants/navigation'
 
 const { isMenuOpen, closeMenu } = useMenu()
 const menuRef = ref(null)
@@ -9,19 +10,6 @@ onClickOutside(menuRef, () => {
     closeMenu()
   }
 })
-
-const mainLinks = [
-  { name: 'Projekty domów', path: '' },
-  { name: 'Nowości', path: '' },
-  { name: 'Popularne', path: '' },
-  { name: 'Promocje', path: '' }
-]
-
-const secondaryLinks = [
-  { name: 'Współpraca', path: '' },
-  { name: 'Reklama', path: '' },
-  { name: 'Kontakt', path: '' }
-]
 </script>
 
 <template>
@@ -106,7 +94,7 @@ const secondaryLinks = [
       <!-- Główne linki -->
       <nav class="flex flex-col gap-1 px-4 py-5 border-b border-white/15">
         <NuxtLink
-          v-for="link in mainLinks"
+          v-for="link in mainNavLinks"
           :key="link.name"
           :to="link.path"
           class="py-2.5 px-2 rounded-lg text-[15px] font-semibold transition-colors duration-200 hover:bg-brand-blue-300"
@@ -119,7 +107,7 @@ const secondaryLinks = [
       <!-- Linki drugorzędne -->
       <nav class="flex flex-col gap-1 px-4 py-5">
         <NuxtLink
-          v-for="link in secondaryLinks"
+          v-for="link in secondaryNavLinks"
           :key="link.name"
           :to="link.path"
           class="py-2.5 px-2 rounded-lg text-[15px] font-semibold transition-colors duration-200 hover:bg-brand-blue-300"

@@ -1,12 +1,7 @@
 <script lang="ts" setup>
-const { openMenu } = useMenu()
+import { mainNavLinks } from '~/constants/navigation'
 
-const marketplaceNavLinks = [
-  { name: 'Projekty domów', path: '' },
-  { name: 'Nowości', path: '' },
-  { name: 'Popularne', path: '' },
-  { name: 'Promocje', path: '' }
-]
+const { openMenu } = useMenu()
 
 function handleOpenMenu() {
   openMenu()
@@ -35,7 +30,7 @@ function handleOpenMenu() {
         </div>
         <div class="hidden md:flex">
           <NuxtLink
-            v-for="link in marketplaceNavLinks"
+            v-for="link in mainNavLinks"
             :key="link.name"
             :to="link.path"
             class="px-4 py-3"
@@ -81,7 +76,7 @@ function handleOpenMenu() {
     <div class="md:hidden overflow-x-auto no-scrollbar mx-2 pb-2 mb-1.5">
       <div class="flex w-max gap-6 px-3">
         <NuxtLink
-          v-for="link in marketplaceNavLinks"
+          v-for="link in mainNavLinks"
           :key="link.name"
           :to="link.path"
           class="py-2 whitespace-nowrap"

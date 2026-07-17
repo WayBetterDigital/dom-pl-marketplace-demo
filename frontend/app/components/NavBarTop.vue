@@ -1,9 +1,5 @@
 <script lang="ts" setup>
-const topBarLinks = [
-  { name: 'Współpraca', path: '' },
-  { name: 'Reklama', path: '' },
-  { name: 'Kontakt', path: '' },
-]
+import { secondaryNavLinks } from '~/constants/navigation'
 </script>
 
 <template>
@@ -49,7 +45,7 @@ const topBarLinks = [
     </section>
     <section class="hidden md:flex">
       <NuxtLink
-        v-for="link in topBarLinks"
+        v-for="link in secondaryNavLinks"
         :key="link.name"
         :to="link.path"
         class="px-5 py-2.5 border-l border-l-white/30"
