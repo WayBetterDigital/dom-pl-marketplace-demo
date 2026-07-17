@@ -78,7 +78,7 @@ function handleOpenMenu() {
     </div>
 
     <!-- Mobile: kategorie -->
-    <div class="md:hidden overflow-x-auto thin-scrollbar mx-2 pb-2 mb-1.5">
+    <div class="md:hidden overflow-x-auto no-scrollbar mx-2 pb-2 mb-1.5">
       <div class="flex w-max gap-6 px-3">
         <NuxtLink
           v-for="link in marketplaceNavLinks"
