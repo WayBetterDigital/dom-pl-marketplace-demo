@@ -1,5 +1,5 @@
 <template>
-  <section class="px-4 md:px-[137px]">
+  <section>
     <div
       class="relative overflow-hidden rounded-[40px] bg-brand-blue-700 text-white min-h-[280px] flex items-center"
     >

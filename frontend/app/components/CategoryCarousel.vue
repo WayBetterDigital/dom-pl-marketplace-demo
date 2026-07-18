@@ -24,7 +24,7 @@ function scroll(direction: -1 | 1) {
 </script>
 
 <template>
-  <section class="relative px-4 md:px-16 py-10 pt-0">
+  <section class="relative py-10 pt-0">
     <button
       type="button"
       aria-label="Poprzednie"

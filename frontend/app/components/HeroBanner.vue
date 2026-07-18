@@ -92,7 +92,7 @@ const guarantees = [
 </script>
 
 <template>
-  <section class="px-4 md:px-[137px] pt-5 mb-20">
+  <section class="pt-5 mb-20">
     <!-- Desktop / tablet -->
     <div
       class="hidden md:block relative overflow-hidden rounded-[40px] bg-brand-blue-700 text-white min-h-75"

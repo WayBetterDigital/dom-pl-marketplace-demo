@@ -34,7 +34,7 @@ function scroll(direction: -1 | 1) {
 </script>
 
 <template>
-  <section class="px-4 md:px-[137px] py-10">
+  <section class="py-10">
     <h2
       v-if="title"
       class="text-[24px] leading-10 font-bold text-brand-blue-700 mb-6"

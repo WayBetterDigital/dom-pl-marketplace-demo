@@ -3,7 +3,9 @@ import { searchCategoryColumns } from '~/constants/searchCategories'
 </script>
 
 <template>
-  <section class="border-t border-[#AEB6CF] px-4 md:px-[137px] py-20">
+  <section
+    class="-mx-4 md:-mx-[137px] px-4 md:px-[137px] border-t border-[#AEB6CF] py-20 bg-linear-to-b from-white to-brand-page"
+  >
     <h2 class="text-[24px] leading-10 font-bold text-brand-blue-700">
       Wyszukaj projekty po kategoriach
     </h2>

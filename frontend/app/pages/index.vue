@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useHousePlanService } from '~/composables/services/useHousePlanService'
 
+definePageMeta({ layout: 'home' })
+
 const housePlanService = useHousePlanService()
 
 const { data: featuredData } = await useAsyncData('featured-house-plans', () =>

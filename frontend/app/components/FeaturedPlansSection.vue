@@ -9,7 +9,7 @@ const promoIndexes = [0, 1, 4, 5]
 </script>
 
 <template>
-  <section class="px-4 md:px-[137px] py-10">
+  <section class="py-10">
     <div class="flex flex-col lg:flex-row gap-6">
       <aside class="w-full lg:w-[360px] shrink-0 flex flex-col mr-4 gap-6 order-2 lg:order-1">
         <PromoInfoCard />
