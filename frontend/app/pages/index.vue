@@ -17,5 +17,7 @@ const featuredPlans = computed(() => data.value?.data ?? [])
     <CategoryCarousel />
 
     <FeaturedPlansSection :plans="featuredPlans" />
+
+    <StyleBanner />
   </div>
 </template>
