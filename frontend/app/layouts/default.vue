@@ -3,7 +3,7 @@ const { isOverlayVisible, overlayMode, hideOverlay } = useSiteOverlay()
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-default">
+  <div class="min-h-screen flex flex-col bg-brand-page">
     <div
       class="fixed inset-0 bg-brand-blue-700/40 backdrop-blur-sm z-40 transition-opacity duration-300"
       :class="

@@ -37,7 +37,7 @@ const promoIndexes = [0, 1, 4, 5]
         <UButton
           to="/produkty"
           block
-          class="mt-10 mb-[60px] rounded-[10px] border border-brand-green-500 bg-transparent py-3 text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
+          class="mt-9 mb-[60px] rounded-[10px] border-2 text-semib border-brand-green-500 bg-transparent py-3 text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
         >
           Zobacz więcej polecanych projektów domów
         </UButton>
