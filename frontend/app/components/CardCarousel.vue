@@ -57,7 +57,7 @@ function scroll(direction: -1 | 1) {
 
       <div
         ref="track"
-        class="carousel-track flex gap-5 overflow-x-auto thin-scrollbar scroll-smooth snap-x"
+        class="carousel-track flex gap-5 overflow-x-auto thin-scrollbar scroll-smooth snap-x snap-mandatory"
       >
         <template
           v-for="(item, index) in items"
@@ -86,6 +86,10 @@ function scroll(direction: -1 | 1) {
 </template>
 
 <style scoped>
+.carousel-track > :slotted(*) {
+  scroll-snap-align: start;
+}
+
 @media (min-width: 768px) {
   .carousel-track {
     scrollbar-width: none;
