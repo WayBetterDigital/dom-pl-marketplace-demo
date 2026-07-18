@@ -8,6 +8,12 @@ const { data } = await useAsyncData('featured-house-plans', () =>
 )
 
 const featuredPlans = computed(() => data.value?.data ?? [])
+
+const { data: popularData } = await useAsyncData('popular-house-plans', () =>
+  housePlanService.listHousePlans({ limit: 10 })
+)
+
+const popularPlans = computed(() => popularData.value?.data ?? [])
 </script>
 
 <template>
@@ -19,5 +25,18 @@ const featuredPlans = computed(() => data.value?.data ?? [])
     <FeaturedPlansSection :plans="featuredPlans" />
 
     <StyleBanner />
+
+    <CardCarousel
+      :items="popularPlans"
+      title="Najczęściej wybierane projekty"
+    >
+      <template #default="{ item, index }">
+        <HousePlanCard
+          :plan="item"
+          :hot-promo="index % 2 === 0"
+          class="snap-start shrink-0 w-[340px]"
+        />
+      </template>
+    </CardCarousel>
   </div>
 </template>
