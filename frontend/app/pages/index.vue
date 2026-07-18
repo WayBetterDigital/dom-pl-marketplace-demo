@@ -57,5 +57,7 @@ const popularPlans = computed(() => popularData.value?.data ?? [])
         />
       </template>
     </CardCarousel>
+
+    <SearchByCategory class="mt-10" />
   </div>
 </template>
