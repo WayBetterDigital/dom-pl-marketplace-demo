@@ -79,7 +79,7 @@ const cover = computed(
       </p>
 
       <div
-        class="mt-3 mb-6 grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] leading-6 font-semibold text-brand-blue-700"
+        class="mt-3 mb-4 grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] Xlg:text-[10px] lg:text-[12px] leading-6 font-semibold text-brand-blue-700"
       >
         <span class="flex items-center gap-1.5">
           <UIcon

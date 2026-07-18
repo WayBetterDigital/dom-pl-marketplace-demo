@@ -34,7 +34,7 @@ const popularPlans = computed(() => popularData.value?.data ?? [])
         <HousePlanCard
           :plan="item"
           :hot-promo="index % 2 === 0"
-          class="snap-start shrink-0 w-[340px]"
+          class="snap-start shrink-0 w-[279px]"
         />
       </template>
     </CardCarousel>
