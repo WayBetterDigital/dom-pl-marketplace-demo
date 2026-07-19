@@ -23,15 +23,15 @@ withDefaults(
     />
 
     <div class="relative text-center">
-      <h3 class="text-[28px] leading-8 font-bold mb-2">
+      <h3 class="text-[21px] md:text-[28px] leading-8 md:leading-9 font-bold mb-2">
         Szukasz projektu?
       </h3>
-      <p class="text-[18px] font-medium leading-7 mb-10">
+      <p class="text-[12px] md:text-[18px] font-medium leading-6 md:leading-7 mb-10">
         Znajdź projekt idealny<br>pod swoje potrzeby
       </p>
       <UButton
         to="/produkty"
-        class="rounded-[10px] px-5 py-3 text-[14px] leading-6 font-semibold bg-brand-green-500 text-white hover:bg-brand-green-500/90"
+        class="rounded-[10px] px-5 py-3 text-[12px] md:text-[14px] leading-5 md:leading-6 font-semibold bg-brand-green-500 text-white hover:bg-brand-green-500/90"
       >
         Pokaż {{ plansCount }} projekty domów
       </UButton>
