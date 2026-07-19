@@ -11,7 +11,9 @@ const promoIndexes = [0, 1, 4, 5]
 <template>
   <section class="py-10">
     <div class="flex flex-col lg:flex-row gap-6">
-      <aside class="w-full lg:w-[360px] shrink-0 flex flex-col mr-4 gap-6 order-2 lg:order-1">
+      <aside
+        class="w-full xmd:w-[280px] lg:mr-2 3xl:w-[360px] 3xl:mr-4 shrink-0 flex flex-col gap-6 order-2 lg:order-1"
+      >
         <PromoInfoCard />
         <CashbackAdCard />
       </aside>
@@ -37,7 +39,7 @@ const promoIndexes = [0, 1, 4, 5]
         <UButton
           to="/produkty"
           block
-          class="mt-9 mb-[60px] rounded-[10px] border-2 text-semib border-brand-green-500 bg-transparent py-3 text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
+          class="mt-9 mb-15 rounded-[10px] border-2 border-brand-green-500 bg-transparent py-3 text-center text-[14px] font-semibold leading-6 text-brand-green-500 hover:bg-brand-green-500/5"
         >
           Zobacz więcej polecanych projektów domów
         </UButton>

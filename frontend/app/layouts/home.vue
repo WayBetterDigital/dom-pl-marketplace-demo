@@ -25,7 +25,7 @@ const { isOverlayVisible, overlayMode, hideOverlay } = useSiteOverlay()
     <MenuContainer />
     <NavBarTop />
     <NavBarBottomMarketplace />
-    <main class="flex-1 flex flex-col px-4 md:px-[137px]">
+    <main class="flex-1 flex flex-col px-5 3xl:px-[137px]">
       <slot />
     </main>
     <Footer />
