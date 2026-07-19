@@ -16,32 +16,40 @@
         <nav
           class="flex flex-col items-center gap-10 md:flex-row md:gap-6 text-brand-blue-700 text-base md:text-sm font-semibold"
         >
-          <NuxtLink to="/redakcja" class="hover:text-orange-500"
-            >Redakcja</NuxtLink
+          <NuxtLink
+            to="http://localhost:3003/reklama"
+            class="hover:text-brand-green-500"
           >
-          <div class="hidden md:block mx-1 h-[6px] w-[1px] bg-brand-blue-700" />
-          <NuxtLink to="/reklama" class="hover:text-orange-500"
-            >Reklama</NuxtLink
-          >
+            Reklama
+          </NuxtLink>
           <div class="hidden md:block mx-1 h-[6px] w-[1px] bg-brand-blue-700" />
           <NuxtLink
-            to="/polityka-prywatnosci"
+            to="https://dom.pl/polityka-prywatnosci.pdf"
             external
-            class="hover:text-orange-500"
-            >Polityka prywatności</NuxtLink
+            class="hover:text-brand-green-500"
           >
+            Polityka prywatności
+          </NuxtLink>
           <!-- <div class="hidden md:block mx-1 h-[6px] w-[1px] bg-brand-blue-700" />
-          <NuxtLink to="/cookies" class="hover:text-orange-500"
+          <NuxtLink to="/cookies" class="hover:text-brand-green-500"
             >Polityka cookies</NuxtLink
           > -->
           <div class="hidden md:block mx-1 h-[6px] w-[1px] bg-brand-blue-700" />
-          <NuxtLink to="/regulamin" external class="hover:text-orange-500"
-            >Regulamin</NuxtLink
+          <NuxtLink
+            to="http://localhost:3003/regulamin.pdf"
+            external
+            class="hover:text-brand-green-500"
           >
+            Regulamin
+          </NuxtLink>
           <div class="hidden md:block mx-1 h-[6px] w-[1px] bg-brand-blue-700" />
-          <NuxtLink to="/rodo" external class="hover:text-orange-500"
-            >Rodo</NuxtLink
+          <NuxtLink
+            to="https://dom.pl/rodo.pdf"
+            external
+            class="hover:text-brand-green-500"
           >
+            Rodo
+          </NuxtLink>
         </nav>
       </div>
       <div class="my-10 md:my-15 h-px bg-black/10" />
@@ -67,7 +75,7 @@
           <NuxtLink
             to="https://waybetter.pl"
             target="_blank"
-            class="hover:text-orange-500"
+            class="hover:text-brand-green-500"
             >WayBetter</NuxtLink
           >
         </div>

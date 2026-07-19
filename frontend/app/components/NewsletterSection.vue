@@ -118,7 +118,7 @@ const SendWebhook = async () => {
             class="flex-1 rounded-lg bg-white px-4 py-3 text-brand-blue-700 placeholder-brand-blue-200 focus:outline-none focus:ring-2 focus:ring-orange-500 h-[60px]"
           />
           <button
-            class="rounded-lg bg-brand-orange-700 text-white text-base w-full md:max-w-[204px] py-3 font-semibold cursor-pointer transition-transform transform hover:scale-104"
+            class="rounded-lg bg-brand-green-500 text-white text-base w-full md:max-w-[204px] py-3 font-semibold cursor-pointer transition-transform transform hover:scale-104"
             @click="SendWebhook"
           >
             Zapisz się
@@ -130,7 +130,7 @@ const SendWebhook = async () => {
         <p v-if="error" class="mt-2 text-sm font-semibold text-red-300">
           {{ error }}
         </p>
-        <NuxtLink to="/polityka-prywatnosci" external>
+        <NuxtLink to="https://dom.pl/polityka-prywatnosci.pdf" external>
           <p
             class="mt-[40px] md:mt-4 text-xs font-semibold text-white align-self-stretch md:mr-10 md:mb-[63px]"
           >
