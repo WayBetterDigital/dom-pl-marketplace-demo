@@ -29,5 +29,7 @@ const { isOverlayVisible, overlayMode, hideOverlay } = useSiteOverlay()
     <main class="flex-1 flex flex-col px-4 md:px-[137px]">
       <slot />
     </main>
+    <!-- Poza <main>, więc na pełną szerokość — footer ma własny kontener -->
+    <Footer />
   </div>
 </template>
