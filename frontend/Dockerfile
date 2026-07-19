@@ -4,6 +4,8 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
+ARG NUXT_NEWSLETTER_WEBHOOK_URL
+
 RUN npm run build
 
 FROM node:22-alpine AS runner

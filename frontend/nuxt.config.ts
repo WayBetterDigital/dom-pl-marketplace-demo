@@ -34,6 +34,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     medusaBaseUrl: 'http://localhost:9000',
+    newsletterWebhookUrl: '',
     // public file URLs use localhost:9090, but containers must use minio:9000
     fileStoragePublicBase: '', // e.g. http://localhost:9090/medusa-bucket
     fileStorageInternalBase: '', // e.g. http://minio:9000/medusa-bucket

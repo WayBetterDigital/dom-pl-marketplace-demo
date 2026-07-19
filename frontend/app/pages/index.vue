@@ -65,5 +65,7 @@ const popularPlans = computed(() => popularData.value?.data ?? [])
     <ArticlesSection />
 
     <SeoFaqSection />
+
+    <NewsletterSection />
   </div>
 </template>
