@@ -25,11 +25,9 @@ const { isOverlayVisible, overlayMode, hideOverlay } = useSiteOverlay()
     <MenuContainer />
     <NavBarTop />
     <NavBarBottomMarketplace />
-    <!-- Poziomy padding sekcji strony głównej — jedno miejsce, sekcje go dziedziczą -->
     <main class="flex-1 flex flex-col px-4 md:px-[137px]">
       <slot />
     </main>
-    <!-- Poza <main>, więc na pełną szerokość — footer ma własny kontener -->
     <Footer />
   </div>
 </template>

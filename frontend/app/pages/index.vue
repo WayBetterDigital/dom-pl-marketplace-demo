@@ -63,5 +63,7 @@ const popularPlans = computed(() => popularData.value?.data ?? [])
     <SearchByCategory class="mt-10" />
 
     <ArticlesSection />
+
+    <SeoFaqSection />
   </div>
 </template>
