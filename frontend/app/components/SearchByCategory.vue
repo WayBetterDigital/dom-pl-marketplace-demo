@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { searchCategoryColumns } from '~/constants/searchCategories'
+
+const showAllCategories = ref(false)
 </script>
 
 <template>
@@ -14,7 +16,8 @@ import { searchCategoryColumns } from '~/constants/searchCategories'
       <div
         v-for="(column, i) in searchCategoryColumns"
         :key="i"
-        class="flex flex-col gap-[14px]"
+        class="flex-col gap-[14px]"
+        :class="i === 0 || showAllCategories ? 'flex' : 'hidden lg:flex'"
       >
         <NuxtLink
           v-for="category in column"
@@ -26,5 +29,13 @@ import { searchCategoryColumns } from '~/constants/searchCategories'
         </NuxtLink>
       </div>
     </div>
+
+    <button
+      type="button"
+      class="lg:hidden mt-10 text-[14px] leading-6 font-bold text-brand-blue-700 underline underline-offset-2 cursor-pointer"
+      @click="showAllCategories = !showAllCategories"
+    >
+      {{ showAllCategories ? 'Pokaż mniej kategorii' : 'Odkryj więcej kategorii' }}
+    </button>
   </section>
 </template>
