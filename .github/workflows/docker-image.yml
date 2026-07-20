@@ -29,6 +29,8 @@ jobs:
           push: true
           tags: ghcr.io/waybetterdigital/dom-pl-marketplace-demo-frontend:latest
           platforms: linux/amd64
+          build-args: |
+            NUXT_NEWSLETTER_WEBHOOK_URL=${{ secrets.NUXT_NEWSLETTER_WEBHOOK_URL }}
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5

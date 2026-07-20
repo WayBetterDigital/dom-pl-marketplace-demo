@@ -12,9 +12,29 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+  colorMode: {
+    preference: 'light',
+    fallback: 'light',
+    storageKey: 'dompl-color-mode'
+  },
+
+  icon: {
+    customCollections: [
+      { prefix: 'local', dir: './app/assets/icons' }
+    ]
+  },
+  fonts: {
+    families: [
+      {
+        name: 'Inter',
+        provider: 'google',
+      },
+    ],
+  },
 
   runtimeConfig: {
     medusaBaseUrl: 'http://localhost:9000',
+    newsletterWebhookUrl: '',
     // public file URLs use localhost:9090, but containers must use minio:9000
     fileStoragePublicBase: '', // e.g. http://localhost:9090/medusa-bucket
     fileStorageInternalBase: '', // e.g. http://minio:9000/medusa-bucket

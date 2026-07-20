@@ -3,7 +3,7 @@ const { isOverlayVisible, overlayMode, hideOverlay } = useSiteOverlay()
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-brand-page">
+  <div class="min-h-screen flex flex-col bg-brand-page overflow-x-clip">
     <div
       class="fixed inset-0 bg-brand-blue-700/40 backdrop-blur-sm z-40 transition-opacity duration-300"
       :class="
@@ -25,8 +25,9 @@ const { isOverlayVisible, overlayMode, hideOverlay } = useSiteOverlay()
     <MenuContainer />
     <NavBarTop />
     <NavBarBottomMarketplace />
-    <main class="flex-1 flex flex-col">
+    <main class="flex-1 flex flex-col px-5 3xl:px-[137px]">
       <slot />
     </main>
+    <Footer />
   </div>
 </template>
