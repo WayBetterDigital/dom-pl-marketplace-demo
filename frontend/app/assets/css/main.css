@@ -17,6 +17,9 @@
   --default-font-family: var(--font-Inter);
   --breakpoint-3xl: 1570px;
   --breakpoint-xmd: 770px;
+  --breakpoint-xlg: 1280px;
+
+  --spacing-8xl: 1372px;
 }
 
 @layer utilities {
